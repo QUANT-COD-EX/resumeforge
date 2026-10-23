@@ -1,0 +1,189 @@
+import React, { useState } from 'react';
+import {
+  FileDown,
+  FileText,
+  Sparkles,
+  Target,
+  Share2,
+  ChevronLeft,
+  ChevronRight,
+  Check
+} from 'lucide-react';
+import { INITIAL_RESUME_STATE, EMPTY_SECTION_DEFAULTS } from './defaultData.js';
+import { useLocalStorage } from './hooks/useLocalStorage.js';
+import { useCompletion } from './hooks/useCompletion.js';
+import StepIndicator from './components/StepIndicator.jsx';
+import FormSteps from './components/FormSteps.jsx';
+import ResumePreview from './components/ResumePreview.jsx';
+import AiFeedbackModal from './components/AiFeedbackModal.jsx';
+import TailorModal from './components/TailorModal.jsx';
+
+export default function App() {
+  const [resumeData, setResumeData] = useLocalStorage('resumeforge_v1', INITIAL_RESUME_STATE);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isAiOpen, setIsAiOpen] = useState(false);
+  const [isTailorOpen, setIsTailorOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const completion = useCompletion(resumeData);
+
+  const updateSection = (sectionKey, newValue) => {
+    setResumeData((prev) => ({
+      ...prev,
+      meta: { ...prev.meta, lastUpdated: new Date().toISOString() },
+      [sectionKey]: newValue
+    }));
+  };
+
+  const resetSection = (sectionKey) => {
+    if (EMPTY_SECTION_DEFAULTS[sectionKey] !== undefined) {
+      updateSection(sectionKey, EMPTY_SECTION_DEFAULTS[sectionKey]);
+    }
+  };
+
+  const handlePrintPdf = () => {
+    window.print();
+  };
+
+  const handleExportDocx = () => {
+    const { personal, education, experience, skills, projects } = resumeData;
+    const htmlContent = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'><title>${personal.fullName} Resume</title></head>
+      <body style="font-family: Calibri, Arial, sans-serif; line-height: 1.4;">
+        <h1 style="margin-bottom: 2px;">${personal.fullName}</h1>
+        <p style="margin-top: 0; color: #444;">${personal.title} | ${personal.email} | ${personal.phone} | ${personal.location}</p>
+        <hr/>
+        <h3>Summary</h3>
+        <p>${personal.summary}</p>
+        <h3>Experience</h3>
+        ${experience.map(e => `<p><b>${e.role}</b> - ${e.company} (${e.startDate} - ${e.endDate})</p><ul>${e.bullets.map(b => `<li>${b}</li>`).join('')}</ul>`).join('')}
+        <h3>Projects</h3>
+        ${projects.map(p => `<p><b>${p.name}</b> (${p.techStack})</p><ul>${p.bullets.map(b => `<li>${b}</li>`).join('')}</ul>`).join('')}
+        <h3>Education</h3>
+        ${education.map(ed => `<p><b>${ed.degree}</b>, ${ed.institution} (${ed.startDate} - ${ed.endDate}) — GPA: ${ed.gpa}</p>`).join('')}
+        <h3>Skills</h3>
+        <p>${[...skills.technical, ...skills.tools, ...skills.soft].join(', ')}</p>
+      </body></html>
+    `;
+    const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${(personal.fullName || 'Resume').replace(/\s+/g, '_')}_ResumeForge.doc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleShareLink = async () => {
+    try {
+      const res = await fetch('/api/share-resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeData })
+      });
+      if (res.ok) {
+        const { shareUrl } = await res.json();
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        throw new Error('Fallback share');
+      }
+    } catch {
+      await navigator.clipboard.writeText(window.location.href);
+    }
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2500);
+  };
+
+  return (
+    <div className="app-shell">
+      {/* Top Navbar (Hidden on Print) */}
+      <header className="top-navbar no-print">
+        <div className="brand-logo">
+          <div className="brand-orb" />
+          <span className="brand-title">Resume<span>Forge</span></span>
+          <span className="autosave-pill">✓ Autosaved</span>
+        </div>
+
+        <div className="toolbar-actions">
+          <button type="button" className="btn-toolbar ai-btn" onClick={() => setIsAiOpen(true)}>
+            <Sparkles size={15} /> AI Review
+          </button>
+          <button type="button" className="btn-toolbar tailor-btn" onClick={() => setIsTailorOpen(true)}>
+            <Target size={15} /> Tailor to JD
+          </button>
+          <button type="button" className="btn-toolbar" onClick={handleExportDocx}>
+            <FileText size={15} /> DOCX
+          </button>
+          <button type="button" className="btn-toolbar" onClick={handleShareLink}>
+            {shareCopied ? <Check size={15} /> : <Share2 size={15} />}
+            {shareCopied ? 'Link Copied!' : 'Share'}
+          </button>
+          <button type="button" className="btn-primary" onClick={handlePrintPdf}>
+            <FileDown size={15} /> Export PDF
+          </button>
+        </div>
+      </header>
+
+      {/* Main Split Workspace */}
+      <div className="workspace-split">
+        {/* Left Guided Form Editor */}
+        <section className="editor-pane no-print">
+          <StepIndicator
+            currentStep={currentStep}
+            setCurrentStep={setCurrentStep}
+            completion={completion}
+          />
+
+          <div className="form-scroll-container">
+            <FormSteps
+              currentStep={currentStep}
+              resumeData={resumeData}
+              updateSection={updateSection}
+              resetSection={resetSection}
+            />
+          </div>
+
+          <footer className="step-footer-nav">
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={currentStep === 0}
+              onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
+            >
+              <ChevronLeft size={16} /> Previous
+            </button>
+            <span className="step-counter">Step {currentStep + 1} of 6</span>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={currentStep === 5}
+              onClick={() => setCurrentStep((s) => Math.min(5, s + 1))}
+            >
+              Next Step <ChevronRight size={16} />
+            </button>
+          </footer>
+        </section>
+
+        {/* Right Live A4 Preview */}
+        <section className="preview-pane">
+          <ResumePreview resumeData={resumeData} />
+        </section>
+      </div>
+
+      {/* AI Modals */}
+      <AiFeedbackModal
+        isOpen={isAiOpen}
+        onClose={() => setIsAiOpen(false)}
+        resumeData={resumeData}
+      />
+      <TailorModal
+        isOpen={isTailorOpen}
+        onClose={() => setIsTailorOpen(false)}
+        resumeData={resumeData}
+        updateSection={updateSection}
+      />
+    </div>
+  );
+}
