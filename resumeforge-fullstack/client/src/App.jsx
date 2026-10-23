@@ -9,9 +9,7 @@ import {
   ChevronRight,
   Check,
   Upload,
-  X,
-  Download,
-  Info
+  Loader2
 } from 'lucide-react';
 import { INITIAL_RESUME_STATE, EMPTY_SECTION_DEFAULTS } from './defaultData.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
@@ -22,7 +20,7 @@ import ResumePreview from './components/ResumePreview.jsx';
 import AiFeedbackModal from './components/AiFeedbackModal.jsx';
 import TailorModal from './components/TailorModal.jsx';
 import ImportPdfModal from './components/ImportPdfModal.jsx';
-import { printCleanResume } from './utils/printResume.js';
+import { downloadResumePdf } from './utils/exportPdf.js';
 
 export default function App() {
   const [resumeData, setResumeData] = useLocalStorage('resumeforge_v1', INITIAL_RESUME_STATE);
@@ -30,14 +28,8 @@ export default function App() {
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isTailorOpen, setIsTailorOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
-  const [isPdfGuideOpen, setIsPdfGuideOpen] = useState(false);
-  const [skipPdfGuide, setSkipPdfGuide] = useState(() => {
-    try {
-      return localStorage.getItem('rf_skip_pdf_guide') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [downloadSuccessToast, setDownloadSuccessToast] = useState(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [sharedBanner, setSharedBanner] = useState(null);
 
@@ -74,11 +66,24 @@ export default function App() {
     }
   };
 
-  const handlePrintPdf = () => {
-    if (skipPdfGuide) {
-      printCleanResume(resumeData?.personal?.fullName || 'Resume');
-    } else {
-      setIsPdfGuideOpen(true);
+  /**
+   * Directly downloads the PDF file with the candidate's name and preserves all clickable links.
+   * Never opens the browser print dialog or triggers "Microsoft Print to PDF".
+   */
+  const handleDownloadPdf = async () => {
+    if (isExportingPdf) return;
+    setIsExportingPdf(true);
+    try {
+      const candidateName = resumeData?.personal?.fullName || 'Resume';
+      await downloadResumePdf(candidateName);
+      const cleanFileName = `${(candidateName).trim().replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_')}_Resume.pdf`;
+      setDownloadSuccessToast(`Downloaded ${cleanFileName}`);
+      setTimeout(() => setDownloadSuccessToast(null), 4000);
+    } catch (err) {
+      console.error('Direct PDF download error:', err);
+      alert('Could not download PDF directly. Please try again.');
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
@@ -189,8 +194,22 @@ export default function App() {
             {shareCopied ? <Check size={15} /> : <Share2 size={15} />}
             {shareCopied ? 'Link Copied!' : 'Share'}
           </button>
-          <button type="button" className="btn-primary" onClick={handlePrintPdf}>
-            <FileDown size={15} /> Export PDF
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={isExportingPdf}
+            onClick={handleDownloadPdf}
+            title={`Direct download ${resumeData?.personal?.fullName || 'Resume'}_Resume.pdf with clickable links`}
+          >
+            {isExportingPdf ? (
+              <>
+                <Loader2 size={15} className="animate-spin" /> Downloading PDF...
+              </>
+            ) : (
+              <>
+                <FileDown size={15} /> Export PDF
+              </>
+            )}
           </button>
         </div>
       </header>
@@ -240,90 +259,30 @@ export default function App() {
       <AiFeedbackModal isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} resumeData={resumeData} />
       <TailorModal isOpen={isTailorOpen} onClose={() => setIsTailorOpen(false)} resumeData={resumeData} updateSection={updateSection} />
 
-      {/* PDF Export Guide Modal */}
-      {isPdfGuideOpen && (
-        <div className="modal-backdrop" onClick={() => setIsPdfGuideOpen(false)}>
-          <div className="modal-panel" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title-group">
-                <FileDown size={20} className="accent-icon" />
-                <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#f8fafc' }}>Export PDF with Active Hyperlinks</h3>
-              </div>
-              <button type="button" className="btn-close" onClick={() => setIsPdfGuideOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="modal-body" style={{ padding: '20px 22px' }}>
-              <div style={{ background: 'rgba(14, 165, 233, 0.08)', border: '1px solid rgba(14, 165, 233, 0.25)', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                  <Info size={20} style={{ color: '#38bdf8', flexShrink: 0, marginTop: '2px' }} />
-                  <div>
-                    <h5 style={{ margin: '0 0 6px 0', color: '#38bdf8', fontSize: '0.9rem', fontWeight: 600 }}>
-                      Quick Step for Windows & Chrome Users:
-                    </h5>
-                    <p style={{ margin: '0 0 10px 0', fontSize: '0.82rem', color: '#cbd5e1', lineHeight: '1.5' }}>
-                      In the print preview dialog that opens next, check the <strong>Destination</strong> dropdown:
-                    </p>
-                    
-                    <div style={{ background: '#0b0f19', border: '1px solid #334155', borderRadius: '6px', padding: '10px 12px', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.84rem', color: '#38bdf8', fontWeight: 600 }}>Destination: Save as PDF</span>
-                        <span style={{ fontSize: '0.7rem', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '2px 8px', borderRadius: '99px', fontWeight: 600 }}>
-                          ✓ Clickable Links
-                        </span>
-                      </div>
-                    </div>
-
-                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#f87171', lineHeight: '1.4' }}>
-                      ⚠️ <strong>Avoid "Microsoft Print to PDF"</strong> — Windows printer drivers flatten all links into plain unclickable words. Choosing <strong>"Save as PDF"</strong> ensures LinkedIn, GitHub, Portfolio, and Project Demo links remain interactive!
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                <input
-                  type="checkbox"
-                  id="rf-skip-pdf-guide"
-                  checked={skipPdfGuide}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setSkipPdfGuide(checked);
-                    if (checked) {
-                      localStorage.setItem('rf_skip_pdf_guide', 'true');
-                    } else {
-                      localStorage.removeItem('rf_skip_pdf_guide');
-                    }
-                  }}
-                  style={{ cursor: 'pointer', accentColor: 'var(--accent-indigo)' }}
-                />
-                <label htmlFor="rf-skip-pdf-guide" style={{ fontSize: '0.8rem', color: '#94a3b8', cursor: 'pointer' }}>
-                  Don't show this tip again
-                </label>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setIsPdfGuideOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => {
-                    setIsPdfGuideOpen(false);
-                    printCleanResume(resumeData?.personal?.fullName || 'Resume');
-                  }}
-                >
-                  <Download size={15} /> Continue to Save as PDF
-                </button>
-              </div>
-            </div>
-          </div>
+      {/* Direct Download Toast */}
+      {downloadSuccessToast && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: '#0f172a',
+            border: '1px solid #10b981',
+            borderRadius: '8px',
+            padding: '12px 18px',
+            color: '#f8fafc',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+            zIndex: 9999,
+            fontSize: '0.85rem'
+          }}
+        >
+          <Check size={18} style={{ color: '#10b981' }} />
+          <span>
+            {downloadSuccessToast} with clickable hyperlinks!
+          </span>
         </div>
       )}
     </div>
