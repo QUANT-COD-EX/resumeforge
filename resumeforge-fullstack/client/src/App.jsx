@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FileDown,
   FileText,
@@ -9,7 +9,9 @@ import {
   ChevronRight,
   Check,
   Upload,
-  Loader2
+  Loader2,
+  Menu,
+  X
 } from 'lucide-react';
 import { INITIAL_RESUME_STATE, EMPTY_SECTION_DEFAULTS } from './defaultData.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
@@ -29,11 +31,33 @@ export default function App() {
   const [isTailorOpen, setIsTailorOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [downloadSuccessToast, setDownloadSuccessToast] = useState(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [sharedBanner, setSharedBanner] = useState(null);
 
+  const menuRef = useRef(null);
   const completion = useCompletion(resumeData);
+
+  // Close menu on outside click or Escape key
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsMenuOpen(false);
+    };
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMenuOpen]);
 
   // Clean up legacy v1 storage key if present
   useEffect(() => {
@@ -185,40 +209,131 @@ export default function App() {
           {sharedBanner && <span className="autosave-pill" style={{ color: '#38bdf8' }}>{sharedBanner}</span>}
         </div>
 
-        <div className="toolbar-actions">
-          <button type="button" className="btn-toolbar" onClick={() => setIsImportOpen(true)} style={{ borderColor: 'rgba(56, 189, 248, 0.4)' }}>
-            <Upload size={15} style={{ color: '#38bdf8' }} /> Import PDF
-          </button>
-          <button type="button" className="btn-toolbar ai-btn" onClick={() => setIsAiOpen(true)}>
-            <Sparkles size={15} /> AI Review
-          </button>
-          <button type="button" className="btn-toolbar tailor-btn" onClick={() => setIsTailorOpen(true)}>
-            <Target size={15} /> Tailor to JD
-          </button>
-          <button type="button" className="btn-toolbar" onClick={handleExportDocx}>
-            <FileText size={15} /> DOCX
-          </button>
-          <button type="button" className="btn-toolbar" onClick={handleShareLink}>
-            {shareCopied ? <Check size={15} /> : <Share2 size={15} />}
-            {shareCopied ? 'Link Copied!' : 'Share'}
-          </button>
+        <div className="menu-container" ref={menuRef}>
           <button
             type="button"
-            className="btn-primary"
-            disabled={isExportingPdf}
-            onClick={handleDownloadPdf}
-            title={`Direct download ${resumeData?.personal?.fullName || 'Resume'}_Resume.pdf with clickable links`}
+            className={`btn-menu-trigger ${isMenuOpen ? 'active' : ''}`}
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            aria-label="Toggle menu bar"
+            aria-expanded={isMenuOpen}
           >
-            {isExportingPdf ? (
-              <>
-                <Loader2 size={15} className="animate-spin" /> Downloading PDF...
-              </>
-            ) : (
-              <>
-                <FileDown size={15} /> Export PDF
-              </>
-            )}
+            {isMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            <span className="menu-trigger-text">{isMenuOpen ? 'Close' : 'Menu'}</span>
           </button>
+
+          {isMenuOpen && (
+            <>
+              <div className="menu-backdrop-overlay" onClick={() => setIsMenuOpen(false)} />
+              <div className="menu-dropdown" role="menu">
+              <div className="menu-section-label">Actions & Tools</div>
+
+              <button
+                type="button"
+                className="menu-item menu-item-primary"
+                disabled={isExportingPdf}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleDownloadPdf();
+                }}
+              >
+                <div className="menu-item-icon">
+                  {isExportingPdf ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
+                </div>
+                <div className="menu-item-text">
+                  <div className="menu-item-title">Export PDF</div>
+                  <div className="menu-item-desc">Direct download strict 1-page PDF with links</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="menu-item"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsImportOpen(true);
+                }}
+              >
+                <div className="menu-item-icon" style={{ color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)' }}>
+                  <Upload size={16} />
+                </div>
+                <div className="menu-item-text">
+                  <div className="menu-item-title">Import PDF</div>
+                  <div className="menu-item-desc">Auto-fill all fields from existing resume</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="menu-item"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsAiOpen(true);
+                }}
+              >
+                <div className="menu-item-icon" style={{ color: '#c084fc', background: 'rgba(192, 132, 252, 0.12)' }}>
+                  <Sparkles size={16} />
+                </div>
+                <div className="menu-item-text">
+                  <div className="menu-item-title">AI Review</div>
+                  <div className="menu-item-desc">ATS score, strengths, and improvements</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="menu-item"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsTailorOpen(true);
+                }}
+              >
+                <div className="menu-item-icon" style={{ color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)' }}>
+                  <Target size={16} />
+                </div>
+                <div className="menu-item-text">
+                  <div className="menu-item-title">Tailor to JD</div>
+                  <div className="menu-item-desc">Match keywords against job description</div>
+                </div>
+              </button>
+
+              <div className="menu-divider" />
+
+              <button
+                type="button"
+                className="menu-item"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleExportDocx();
+                }}
+              >
+                <div className="menu-item-icon">
+                  <FileText size={16} />
+                </div>
+                <div className="menu-item-text">
+                  <div className="menu-item-title">DOCX</div>
+                  <div className="menu-item-desc">Download editable Microsoft Word document</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="menu-item"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleShareLink();
+                }}
+              >
+                <div className="menu-item-icon" style={{ color: shareCopied ? '#10b981' : undefined }}>
+                  {shareCopied ? <Check size={16} /> : <Share2 size={16} />}
+                </div>
+                <div className="menu-item-text">
+                  <div className="menu-item-title">{shareCopied ? 'Link Copied!' : 'Share'}</div>
+                  <div className="menu-item-desc">Copy public share link for any device</div>
+                </div>
+              </button>
+            </div>
+          </>
+        )}
         </div>
       </header>
 

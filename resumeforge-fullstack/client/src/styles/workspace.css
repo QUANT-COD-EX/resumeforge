@@ -1,9 +1,10 @@
 .app-shell { display: flex; flex-direction: column; height: 100vh; }
 .top-navbar {
-  height: 60px; background: rgba(17, 24, 39, 0.95);
+  height: 60px; background: #111827;
   border-bottom: 1px solid var(--border-subtle);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 24px; flex-shrink: 0;
+  position: sticky; top: 0; z-index: 500;
 }
 .brand-logo { display: flex; align-items: center; gap: 10px; }
 .brand-orb {
@@ -16,16 +17,148 @@
   font-size: 0.72rem; color: var(--emerald);
   background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 99px;
 }
-.toolbar-actions { display: flex; align-items: center; gap: 10px; }
-.btn-toolbar {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--bg-card); color: var(--text-main);
-  padding: 8px 13px; border-radius: var(--radius-md);
-  font-size: 0.82rem; font-weight: 500; border: 1px solid var(--border-subtle);
+
+/* ==========================================================================
+   MENU BAR & ACTIONS DROPDOWN
+   ========================================================================== */
+.menu-container {
+  position: relative;
 }
-.btn-toolbar:hover { border-color: var(--accent-indigo); background: #263349; }
-.ai-btn { border-color: rgba(168, 85, 247, 0.5); color: #e9d5ff; }
-.tailor-btn { border-color: rgba(14, 165, 233, 0.5); color: #bae6fd; }
+
+.btn-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  color: var(--text-main);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.84rem;
+  font-weight: 600;
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-menu-trigger:hover, .btn-menu-trigger.active {
+  background: #1e293b;
+  border-color: var(--accent-indigo);
+  color: #fff;
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.28);
+}
+
+.menu-trigger-text {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.menu-backdrop-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 990;
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 300px;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  padding: 8px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-section-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 6px 10px 4px;
+}
+
+.menu-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-main);
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.menu-item-primary {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(168, 85, 247, 0.18));
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.menu-item-primary:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3));
+  border-color: var(--accent-indigo);
+}
+
+.menu-item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+  flex-shrink: 0;
+}
+
+.menu-item-primary .menu-item-icon {
+  background: linear-gradient(135deg, var(--accent-indigo), var(--accent-violet));
+  color: #fff;
+}
+
+.menu-item-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.menu-item-title {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.menu-item-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .btn-primary {
   display: inline-flex; align-items: center; gap: 6px;
   background: linear-gradient(135deg, var(--accent-indigo), var(--accent-violet));
@@ -38,6 +171,7 @@
   padding: 8px 14px; border-radius: var(--radius-md);
   font-size: 0.82rem; border: 1px solid var(--border-subtle);
 }
+
 .workspace-split { display: grid; grid-template-columns: 46% 54%; flex: 1; overflow: hidden; }
 .editor-pane {
   display: flex; flex-direction: column; background: var(--bg-panel);
@@ -181,7 +315,6 @@
 .tailor-box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .tailor-summary-preview { color: #cbd5e1; line-height: 1.45; }
 
-
 /* PDF Import Modal Styles */
 .dropzone-container {
   border: 2px dashed rgba(99, 102, 241, 0.4);
@@ -296,46 +429,27 @@
   }
 
   .top-navbar {
-    height: auto !important;
-    padding: 12px 16px !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 10px !important;
+    height: 56px !important;
+    padding: 0 16px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
   }
 
   .brand-logo {
     display: flex !important;
     align-items: center !important;
-    justify-content: space-between !important;
-    width: 100% !important;
-  }
-
-  .toolbar-actions {
-    width: 100% !important;
-    display: flex !important;
-    align-items: center !important;
     gap: 8px !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    white-space: nowrap !important;
-    padding-bottom: 4px !important;
-    -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: thin !important;
+    width: auto !important;
   }
 
-  .toolbar-actions::-webkit-scrollbar {
-    height: 3px;
-  }
-
-  .toolbar-actions::-webkit-scrollbar-thumb {
-    background: var(--border-subtle);
-    border-radius: 3px;
-  }
-
-  .btn-toolbar, .btn-primary {
-    flex-shrink: 0 !important;
-    font-size: 0.78rem !important;
-    padding: 7px 12px !important;
+  .menu-dropdown {
+    width: min(310px, calc(100vw - 24px)) !important;
+    right: 0 !important;
+    top: calc(100% + 6px) !important;
   }
 
   .workspace-split {
