@@ -180,3 +180,85 @@
 .tailor-box { background: var(--bg-card); padding: 12px; border-radius: var(--radius-md); margin-top: 12px; font-size: 0.82rem; }
 .tailor-box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .tailor-summary-preview { color: #cbd5e1; line-height: 1.45; }
+
+
+/* PDF Import Modal Styles */
+.dropzone-container {
+  border: 2px dashed rgba(99, 102, 241, 0.4);
+  border-radius: var(--radius-lg);
+  padding: 36px 20px;
+  text-align: center;
+  background: rgba(30, 41, 59, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.dropzone-container:hover, .dropzone-container.drag-active {
+  border-color: var(--accent-cyan);
+  background: rgba(14, 165, 233, 0.08);
+}
+.dropzone-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--accent-indigo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dropzone-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+.dropzone-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.parsed-preview-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin: 16px 0;
+}
+.parsed-preview-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  margin-bottom: 3px;
+}
+.parsed-preview-meta {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.parsed-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.parsed-stat-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 8px 10px;
+  text-align: center;
+}
+.parsed-stat-number {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+}
+.parsed-stat-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}

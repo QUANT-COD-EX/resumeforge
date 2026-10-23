@@ -7,7 +7,8 @@ import {
   Share2,
   ChevronLeft,
   ChevronRight,
-  Check
+  Check,
+  Upload
 } from 'lucide-react';
 import { INITIAL_RESUME_STATE, EMPTY_SECTION_DEFAULTS } from './defaultData.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
@@ -17,12 +18,14 @@ import FormSteps from './components/FormSteps.jsx';
 import ResumePreview from './components/ResumePreview.jsx';
 import AiFeedbackModal from './components/AiFeedbackModal.jsx';
 import TailorModal from './components/TailorModal.jsx';
+import ImportPdfModal from './components/ImportPdfModal.jsx';
 
 export default function App() {
   const [resumeData, setResumeData] = useLocalStorage('resumeforge_v1', INITIAL_RESUME_STATE);
   const [currentStep, setCurrentStep] = useState(0);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isTailorOpen, setIsTailorOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [sharedBanner, setSharedBanner] = useState(null);
 
@@ -128,6 +131,12 @@ export default function App() {
     setTimeout(() => setShareCopied(false), 2500);
   };
 
+  const handleImportParsedResume = (importedData) => {
+    if (!importedData) return;
+    setResumeData(importedData);
+    setCurrentStep(0); // Return to personal step to see imported info
+  };
+
   return (
     <div className="app-shell">
       <header className="top-navbar no-print">
@@ -139,6 +148,9 @@ export default function App() {
         </div>
 
         <div className="toolbar-actions">
+          <button type="button" className="btn-toolbar" onClick={() => setIsImportOpen(true)} style={{ borderColor: 'rgba(56, 189, 248, 0.4)' }}>
+            <Upload size={15} style={{ color: '#38bdf8' }} /> Import PDF
+          </button>
           <button type="button" className="btn-toolbar ai-btn" onClick={() => setIsAiOpen(true)}>
             <Sparkles size={15} /> AI Review
           </button>
@@ -195,6 +207,11 @@ export default function App() {
         </section>
       </div>
 
+      <ImportPdfModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImport={handleImportParsedResume}
+      />
       <AiFeedbackModal isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} resumeData={resumeData} />
       <TailorModal isOpen={isTailorOpen} onClose={() => setIsTailorOpen(false)} resumeData={resumeData} updateSection={updateSection} />
     </div>
