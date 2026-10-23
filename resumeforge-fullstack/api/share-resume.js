@@ -19,20 +19,33 @@ export default async function handler(req, res) {
 
     const supabase = getSupabase();
     if (!supabase) {
-      return res.status(503).json({ error: 'Supabase credentials not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY.' });
+      return res.status(503).json({ error: 'Supabase credentials not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY in Vercel.' });
     }
 
     const shareId = `rf_${nanoid(8)}`;
     const templateId = resumeData?.meta?.template || 'modern';
 
-    const { error } = await supabase
-      .from('shared_resumes')
+    // Try resume_shares first (as in user's Supabase dashboard), fallback to shared_resumes
+    let { error } = await supabase
+      .from('resume_shares')
       .insert({
         id: shareId,
         resume_data: resumeData,
         template_id: templateId,
         views_count: 0
       });
+
+    if (error && error.message?.includes('relation "public.resume_shares" does not exist')) {
+      const fallback = await supabase
+        .from('shared_resumes')
+        .insert({
+          id: shareId,
+          resume_data: resumeData,
+          template_id: templateId,
+          views_count: 0
+        });
+      error = fallback.error;
+    }
 
     if (error) {
       console.error('Supabase insert error:', error);

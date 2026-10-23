@@ -16,14 +16,28 @@ export default async function handler(req, res) {
 
     const supabase = getSupabase();
     if (!supabase) {
-      return res.status(503).json({ error: 'Supabase credentials not configured.' });
+      return res.status(503).json({ error: 'Supabase credentials not configured in Vercel.' });
     }
 
-    const { data, error } = await supabase
-      .from('shared_resumes')
+    // Try resume_shares first, fallback to shared_resumes
+    let { data, error } = await supabase
+      .from('resume_shares')
       .select('id, resume_data, template_id, created_at, views_count')
       .eq('id', id)
       .single();
+
+    let targetTable = 'resume_shares';
+
+    if (error && error.message?.includes('relation "public.resume_shares" does not exist')) {
+      const fallback = await supabase
+        .from('shared_resumes')
+        .select('id, resume_data, template_id, created_at, views_count')
+        .eq('id', id)
+        .single();
+      data = fallback.data;
+      error = fallback.error;
+      targetTable = 'shared_resumes';
+    }
 
     if (error || !data) {
       return res.status(404).json({ error: 'Shared resume not found.' });
@@ -31,7 +45,7 @@ export default async function handler(req, res) {
 
     // Increment view count asynchronously
     supabase
-      .from('shared_resumes')
+      .from(targetTable)
       .update({ views_count: (data.views_count || 0) + 1 })
       .eq('id', id)
       .then(() => {});
