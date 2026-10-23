@@ -1,7 +1,7 @@
 import html2pdf from 'html2pdf.js';
 
 /**
- * Directly generates and downloads the resume as an A4 PDF with active clickable hyperlinks.
+ * Directly downloads the resume as an A4 PDF with active clickable hyperlinks.
  * Bypasses all browser print dialogs, virtual printer drivers, and "Microsoft Print to PDF".
  *
  * @param {string} fullName - Candidate's full name for the file naming (e.g. Aarav_Mehta_Resume.pdf)
@@ -13,29 +13,25 @@ export async function downloadResumePdf(fullName = 'Resume') {
     throw new Error('Resume print target not found.');
   }
 
-  // Format filename cleanly
+  // Format clean filename: e.g. Aarav_Mehta_Resume.pdf
   const cleanName = (fullName || 'Resume').trim().replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_') || 'Resume';
   const filename = `${cleanName}_Resume.pdf`;
 
-  // Create an unscaled off-screen staging container at exact A4 proportions (210mm x 297mm)
-  const staging = document.createElement('div');
-  staging.setAttribute(
-    'style',
-    'position: fixed; left: 0; top: 0; width: 210mm; min-height: 297mm; z-index: -9999; background: #ffffff; margin: 0; padding: 0; overflow: visible;'
-  );
+  // Find the scale wrapper to temporarily remove the preview CSS scale
+  // so html2canvas captures at exact 100% 1:1 A4 resolution (not shrunk down)
+  const scaleWrapper = target.closest('.a4-scale-wrapper');
+  const prevTransform = scaleWrapper ? scaleWrapper.style.transform : '';
+  const prevTransition = scaleWrapper ? scaleWrapper.style.transition : '';
+  const prevHeight = scaleWrapper ? scaleWrapper.style.height : '';
 
-  // Deep clone the target so we capture exact unscaled layout and styles
-  const clone = target.cloneNode(true);
-  clone.style.width = '210mm';
-  clone.style.minHeight = '297mm';
-  clone.style.boxShadow = 'none';
-  clone.style.margin = '0';
-  clone.style.transform = 'none';
-  clone.style.transition = 'none';
-  clone.style.overflow = 'visible';
+  if (scaleWrapper) {
+    scaleWrapper.style.transition = 'none';
+    scaleWrapper.style.transform = 'none';
+    scaleWrapper.style.height = 'auto';
+  }
 
-  staging.appendChild(clone);
-  document.body.appendChild(staging);
+  // Force synchronous layout recalculation
+  void target.offsetHeight;
 
   const opt = {
     margin: 0,
@@ -45,9 +41,8 @@ export async function downloadResumePdf(fullName = 'Resume') {
       scale: 2,
       useCORS: true,
       logging: false,
-      scrollX: 0,
       scrollY: 0,
-      windowWidth: 794 // 210mm in pixels at 96 DPI
+      scrollX: 0
     },
     jsPDF: {
       unit: 'mm',
@@ -58,10 +53,14 @@ export async function downloadResumePdf(fullName = 'Resume') {
   };
 
   try {
-    await html2pdf().from(staging).set(opt).save();
+    // Generate and directly trigger browser file download
+    await html2pdf().from(target).set(opt).save();
   } finally {
-    if (staging.parentNode) {
-      staging.parentNode.removeChild(staging);
+    // Restore preview scaling immediately
+    if (scaleWrapper) {
+      scaleWrapper.style.transform = prevTransform;
+      scaleWrapper.style.transition = prevTransition;
+      scaleWrapper.style.height = prevHeight;
     }
   }
 }
