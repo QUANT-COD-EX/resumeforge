@@ -1,0 +1,10 @@
+node_modules/
+client/node_modules/
+client/dist/
+server-node/node_modules/
+server-node/db/resumeforge.sqlite
+*.sqlite
+.env
+__pycache__/
+*.pyc
+.vercel/
