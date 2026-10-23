@@ -18,15 +18,19 @@ export default function AiFeedbackModal({ isOpen, onClose, resumeData }) {
       if (res.ok) {
         setReport(await res.json());
       } else {
-        throw new Error('Fallback');
+        throw new Error('API returned ' + res.status);
       }
-    } catch {
-      const hasMetrics = JSON.stringify(resumeData.experience).match(/\d+%|\d+x|\d+\+/);
-      const skillCount = resumeData.skills.technical.length;
-      const calculatedScore = Math.min(9.5, 6.5 + (hasMetrics ? 1.5 : 0) + (skillCount >= 5 ? 1 : 0));
+    } catch (err) {
+      console.warn('Network error calling /api/ai-feedback:', err);
+      // Fallback
+      const skills = resumeData.skills?.technical || [];
+      const hasMetrics = JSON.stringify(resumeData.experience || []).match(/\d+%|\d+x|\d+\+/);
+      const skillCount = skills.length;
+      const calculatedScore = Math.min(9.3, 6.8 + (hasMetrics ? 1.4 : 0) + (skillCount >= 5 ? 0.9 : 0));
 
       setReport({
         score: calculatedScore.toFixed(1),
+        provider: 'Offline Heuristic Engine',
         strengths: [
           'Clean A4 visual hierarchy with ATS-friendly section headers.',
           `Strong technical keyword density (${skillCount} core technologies listed).`
@@ -62,7 +66,7 @@ export default function AiFeedbackModal({ isOpen, onClose, resumeData }) {
             <div className="ai-prompt-box">
               <p>Get a strict, recruiter-grade evaluation out of 10 covering impact metrics, ATS readability, and actionable improvements.</p>
               <button type="button" className="btn-primary" style={{ marginTop: '12px' }} onClick={analyzeResume} disabled={loading}>
-                {loading ? 'Analyzing Resume...' : 'Run AI Resume Audit'}
+                {loading ? 'Auditing Resume with AI...' : 'Run AI Resume Audit'}
               </button>
             </div>
           ) : (
@@ -72,8 +76,19 @@ export default function AiFeedbackModal({ isOpen, onClose, resumeData }) {
                 <div>
                   <h4>Overall Resume Impact Score</h4>
                   <p>Evaluated for ATS parsing, action verbs, and measurable outcomes.</p>
+                  {report.provider && (
+                    <span style={{ display: 'inline-block', fontSize: '0.72rem', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', padding: '2px 8px', borderRadius: '4px', marginTop: '5px' }}>
+                      ⚡ {report.provider}
+                    </span>
+                  )}
                 </div>
               </div>
+
+              {report.debugErrors && report.debugErrors.length > 0 && (
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(30, 41, 59, 0.6)', border: '1px solid var(--border-subtle)', padding: '8px 12px', borderRadius: '6px', margin: '10px 0' }}>
+                  💡 <strong>Tip:</strong> If you recently added `GROQ_API_KEY` or `GEMINI_API_KEY` in Vercel Settings, go to Vercel → <strong>Deployments</strong> → click <strong>Redeploy</strong> on your latest build so the environment variables take effect!
+                </div>
+              )}
 
               <div className="feedback-section">
                 <h5><CheckCircle size={15} /> Key Strengths</h5>
@@ -90,7 +105,9 @@ export default function AiFeedbackModal({ isOpen, onClose, resumeData }) {
                 <ul>{report.improvements.map((imp, i) => <li key={i}>{imp}</li>)}</ul>
               </div>
 
-              <button type="button" className="btn-secondary" onClick={analyzeResume}>Re-Evaluate Resume</button>
+              <button type="button" className="btn-secondary" onClick={analyzeResume} disabled={loading}>
+                {loading ? 'Re-Evaluating...' : 'Re-Evaluate Resume'}
+              </button>
             </div>
           )}
         </div>

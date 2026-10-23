@@ -1,69 +1,90 @@
-async function callLLM(prompt, pdfBase64) {
-  const groqKey = process.env.GROQ_API_KEY;
-  const geminiKey = process.env.GEMINI_API_KEY;
+function extractJson(rawText) {
+  if (!rawText) return null;
+  const cleaned = rawText.trim();
+  const fence = cleaned.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+  if (fence) {
+    try { return JSON.parse(fence[1]); } catch {}
+  }
+  const brace = cleaned.match(/\{[\s\S]*\}/);
+  if (brace) {
+    try { return JSON.parse(brace[0]); } catch {}
+  }
+  try { return JSON.parse(cleaned); } catch {}
+  return null;
+}
 
+async function callLLM(prompt, pdfBase64) {
+  const groqKey = (process.env.GROQ_API_KEY || '').trim();
+  const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+
+  // 1. Try Gemini (multimodal PDF understanding)
   if (geminiKey && geminiKey !== 'your_gemini_api_key_here') {
-    try {
-      const parts = [{ text: prompt }];
-      if (pdfBase64) {
-        parts.push({
-          inline_data: {
-            mime_type: 'application/pdf',
-            data: pdfBase64
-          }
-        });
-      }
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts }],
-            generationConfig: { responseMimeType: 'application/json', temperature: 0.1 }
-          }),
-          signal: AbortSignal.timeout(20000)
+    for (const model of ['gemini-1.5-flash', 'gemini-2.0-flash']) {
+      try {
+        const parts = [{ text: prompt }];
+        if (pdfBase64) {
+          parts.push({
+            inline_data: {
+              mime_type: 'application/pdf',
+              data: pdfBase64
+            }
+          });
         }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) return JSON.parse(text);
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts }],
+              generationConfig: { responseMimeType: 'application/json', temperature: 0.1 }
+            }),
+            signal: AbortSignal.timeout(20000)
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const parsed = extractJson(data.candidates?.[0]?.content?.parts?.[0]?.text);
+          if (parsed && parsed.personal?.fullName) return parsed;
+        }
+      } catch (e) {
+        console.warn(`Gemini parse (${model}) failed:`, e.message);
       }
-    } catch (e) {
-      console.warn('Gemini parse failed:', e.message);
     }
   }
 
+  // 2. Try Groq (Llama 3.3 70B & 3.1 8B)
   if (groqKey && groqKey !== 'your_groq_api_key_here') {
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${groqKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are an expert resume parser. You extract information from resume text and convert it into strictly valid JSON matching the required schema.'
-            },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.1,
-          response_format: { type: 'json_object' }
-        }),
-        signal: AbortSignal.timeout(20000)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) return JSON.parse(content);
+    for (const model of ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']) {
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${groqKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert resume parser. Extract information from resume text and convert it into strictly valid JSON matching the schema.'
+              },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.1,
+            response_format: { type: 'json_object' }
+          }),
+          signal: AbortSignal.timeout(20000)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const parsed = extractJson(data.choices?.[0]?.message?.content);
+          if (parsed && parsed.personal?.fullName) return parsed;
+        }
+      } catch (e) {
+        console.warn(`Groq parse (${model}) failed:`, e.message);
       }
-    } catch (e) {
-      console.warn('Groq parse failed:', e.message);
     }
   }
 
