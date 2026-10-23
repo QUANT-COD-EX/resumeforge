@@ -24,7 +24,7 @@ import { downloadResumePdf } from './utils/exportPdf.js';
 
 export default function App() {
   const [resumeData, setResumeData] = useLocalStorage('resumeforge_v2', INITIAL_RESUME_STATE);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useLocalStorage('resumeforge_step', 0);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isTailorOpen, setIsTailorOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -35,17 +35,14 @@ export default function App() {
 
   const completion = useCompletion(resumeData);
 
-  // Clear any legacy cached Aarav Mehta dummy data so user always starts completely blank
+  // Clean up legacy v1 storage key if present
   useEffect(() => {
-    if (resumeData?.personal?.fullName === 'Aarav Mehta') {
-      setResumeData(INITIAL_RESUME_STATE);
-      try {
-        window.localStorage.removeItem('resumeforge_v1');
-      } catch {}
-    }
+    try {
+      window.localStorage.removeItem('resumeforge_v1');
+    } catch {}
   }, []);
 
-  // Auto-load shared resume from Supabase if ?share=rf_... is present in URL
+  // Auto-load shared resume from server if ?share=rf_... is present in URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const shareId = params.get('share');
@@ -56,6 +53,8 @@ export default function App() {
           if (payload?.resumeData) {
             setResumeData(payload.resumeData);
             setSharedBanner(`Viewing Shared Resume (${payload.shareId}) • Views: ${payload.viewsCount}`);
+            // Remove ?share= from URL so subsequent refreshes restore local device edits
+            window.history.replaceState({}, '', window.location.pathname);
           }
         })
         .catch(() => console.warn('Could not fetch shared resume ID:', shareId));
@@ -158,8 +157,7 @@ export default function App() {
         body: JSON.stringify({ resumeData })
       });
       if (res.ok) {
-        const { shareUrl, shareId } = await res.json();
-        window.history.replaceState({}, '', `?share=${shareId}`);
+        const { shareUrl } = await res.json();
         await navigator.clipboard.writeText(shareUrl);
       } else {
         throw new Error('Fallback share');
