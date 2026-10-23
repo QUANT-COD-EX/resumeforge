@@ -82,7 +82,13 @@ export default function AiFeedbackModal({ isOpen, onClose, resumeData }) {
                     </span>
                   )}
                 </div>
-              
+              </div>
+
+              {report.debugErrors && report.debugErrors.length > 0 && (
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(30, 41, 59, 0.6)', border: '1px solid var(--border-subtle)', padding: '8px 12px', borderRadius: '6px', margin: '10px 0' }}>
+                  💡 <strong>Tip:</strong> AI feedback is subjected to guide. Not 100% correct.
+                </div>
+
               )}
 
               <div className="feedback-section">
