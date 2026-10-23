@@ -1,5 +1,5 @@
 import React from 'react';
-import { ProjectTitle, LinkedInLink, GitHubOrPortfolioLink } from './templateLinks.jsx';
+import { ProjectTitle, LinkedInLink, GitHubLink, PortfolioLink } from './templateLinks.jsx';
 
 export default function MinimalTemplate({ data }) {
   const { personal, education, experience, skills, projects } = data;
@@ -20,9 +20,14 @@ export default function MinimalTemplate({ data }) {
               <LinkedInLink url={personal.linkedin} className="minimal-link-item" iconSize={12} />
             </div>
           )}
-          {(personal.portfolio || personal.github) && (
+          {personal.github && (
             <div>
-              <GitHubOrPortfolioLink url={personal.portfolio || personal.github} className="minimal-link-item" iconSize={12} />
+              <GitHubLink url={personal.github} className="minimal-link-item" iconSize={12} />
+            </div>
+          )}
+          {personal.portfolio && (
+            <div>
+              <PortfolioLink url={personal.portfolio} className="minimal-link-item" iconSize={12} />
             </div>
           )}
         </div>

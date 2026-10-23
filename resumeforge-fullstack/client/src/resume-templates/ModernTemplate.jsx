@@ -1,5 +1,5 @@
 import React from 'react';
-import { ProjectTitle, LinkedInLink, GitHubOrPortfolioLink } from './templateLinks.jsx';
+import { ProjectTitle, LinkedInLink, GitHubLink, PortfolioLink } from './templateLinks.jsx';
 
 export default function ModernTemplate({ data }) {
   const { personal, education, experience, skills, projects } = data;
@@ -23,9 +23,14 @@ export default function ModernTemplate({ data }) {
                 <LinkedInLink url={personal.linkedin} className="modern-contact-link" />
               </li>
             )}
-            {(personal.portfolio || personal.github) && (
+            {personal.github && (
               <li>
-                <GitHubOrPortfolioLink url={personal.portfolio || personal.github} className="modern-contact-link" />
+                <GitHubLink url={personal.github} className="modern-contact-link" />
+              </li>
+            )}
+            {personal.portfolio && (
+              <li>
+                <PortfolioLink url={personal.portfolio} className="modern-contact-link" />
               </li>
             )}
           </ul>

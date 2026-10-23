@@ -87,7 +87,8 @@ export default function App() {
     const { personal, education, experience, skills, projects } = resumeData;
     const socialLinks = [
       personal.linkedin ? `<a href="${personal.linkedin}">LinkedIn</a>` : '',
-      (personal.portfolio || personal.github) ? `<a href="${personal.portfolio || personal.github}">GitHub</a>` : ''
+      personal.github ? `<a href="${personal.github}">GitHub</a>` : '',
+      personal.portfolio ? `<a href="${personal.portfolio}">Portfolio</a>` : ''
     ].filter(Boolean);
     const contactLine = [personal.title, personal.email, personal.phone, personal.location, ...socialLinks].filter(Boolean).join(' | ');
 

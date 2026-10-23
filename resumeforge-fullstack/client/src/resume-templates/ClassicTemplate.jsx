@@ -1,5 +1,5 @@
 import React from 'react';
-import { ProjectTitle, LinkedInLink, GitHubOrPortfolioLink } from './templateLinks.jsx';
+import { ProjectTitle, LinkedInLink, GitHubLink, PortfolioLink } from './templateLinks.jsx';
 
 export default function ClassicTemplate({ data }) {
   const { personal, education, experience, skills, projects } = data;
@@ -17,10 +17,10 @@ export default function ClassicTemplate({ data }) {
           {personal.email && <span>{personal.email}</span>}
           {(personal.location || personal.phone || personal.email) && personal.linkedin && <span className="classic-sep"> • </span>}
           {personal.linkedin && <LinkedInLink url={personal.linkedin} className="classic-link-item" iconSize={12} />}
-          {(personal.portfolio || personal.github) && <span className="classic-sep"> • </span>}
-          {(personal.portfolio || personal.github) && (
-            <GitHubOrPortfolioLink url={personal.portfolio || personal.github} className="classic-link-item" iconSize={12} />
-          )}
+          {personal.github && <span className="classic-sep"> • </span>}
+          {personal.github && <GitHubLink url={personal.github} className="classic-link-item" iconSize={12} />}
+          {personal.portfolio && <span className="classic-sep"> • </span>}
+          {personal.portfolio && <PortfolioLink url={personal.portfolio} className="classic-link-item" iconSize={12} />}
         </div>
       </header>
 

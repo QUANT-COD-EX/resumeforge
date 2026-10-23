@@ -25,38 +25,41 @@ export default function FormSteps({ currentStep, resumeData, updateSection, rese
         <div className="form-grid-2">
           <div className="form-group">
             <label className="field-label">Full Name</label>
-            <input type="text" className="form-input" value={personal.fullName} onChange={(e) => handleChange('fullName', e.target.value)} />
+            <input type="text" className="form-input" value={personal.fullName || ''} onChange={(e) => handleChange('fullName', e.target.value)} />
           </div>
           <div className="form-group">
             <label className="field-label">Professional Title</label>
-            <input type="text" className="form-input" value={personal.title} onChange={(e) => handleChange('title', e.target.value)} />
+            <input type="text" className="form-input" value={personal.title || ''} onChange={(e) => handleChange('title', e.target.value)} />
           </div>
           <div className="form-group">
             <label className="field-label">Email Address</label>
-            <input type="email" className="form-input" value={personal.email} onChange={(e) => handleChange('email', e.target.value)} />
+            <input type="email" className="form-input" value={personal.email || ''} onChange={(e) => handleChange('email', e.target.value)} />
           </div>
           <div className="form-group">
             <label className="field-label">Phone Number</label>
-            <input type="tel" className="form-input" value={personal.phone} onChange={(e) => handleChange('phone', e.target.value)} />
+            <input type="tel" className="form-input" value={personal.phone || ''} onChange={(e) => handleChange('phone', e.target.value)} />
           </div>
           <div className="form-group">
             <label className="field-label">Location</label>
-            <input type="text" className="form-input" value={personal.location} onChange={(e) => handleChange('location', e.target.value)} />
+            <input type="text" className="form-input" value={personal.location || ''} onChange={(e) => handleChange('location', e.target.value)} />
           </div>
           <div className="form-group">
             <label className="field-label">LinkedIn URL</label>
-            <input type="text" className="form-input" value={personal.linkedin} onChange={(e) => handleChange('linkedin', e.target.value)} />
+            <input type="text" className="form-input" placeholder="linkedin.com/in/username" value={personal.linkedin || ''} onChange={(e) => handleChange('linkedin', e.target.value)} />
           </div>
-        </div>
-
-        <div className="form-group">
-          <label className="field-label">GitHub / Portfolio Link</label>
-          <input type="text" className="form-input" value={personal.portfolio} onChange={(e) => handleChange('portfolio', e.target.value)} />
+          <div className="form-group">
+            <label className="field-label">GitHub URL</label>
+            <input type="text" className="form-input" placeholder="github.com/username" value={personal.github || ''} onChange={(e) => handleChange('github', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="field-label">Portfolio Link</label>
+            <input type="text" className="form-input" placeholder="yourportfolio.dev" value={personal.portfolio || ''} onChange={(e) => handleChange('portfolio', e.target.value)} />
+          </div>
         </div>
 
         <div className="form-group">
           <label className="field-label">Professional Summary</label>
-          <textarea rows={4} className="form-input" value={personal.summary} onChange={(e) => handleChange('summary', e.target.value)} />
+          <textarea rows={4} className="form-input" value={personal.summary || ''} onChange={(e) => handleChange('summary', e.target.value)} />
         </div>
       </div>
     );

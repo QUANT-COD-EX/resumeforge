@@ -59,24 +59,50 @@ export function LinkedInLink({ url, className = '', label = 'LinkedIn', iconSize
 }
 
 /**
- * Renders masked GitHub or Portfolio link with logo
+ * Renders masked GitHub link with logo
  */
-export function GitHubOrPortfolioLink({ url, className = '', iconSize = 13 }) {
+export function GitHubLink({ url, className = '', label = 'GitHub', iconSize = 13 }) {
   if (!url || !url.trim()) return null;
-  const isGh = isGithubUrl(url);
-  const Icon = isGh ? Github : Globe;
-  const label = isGh ? 'GitHub' : 'Portfolio';
-
   return (
     <a
       href={formatUrl(url)}
       target="_blank"
       rel="noopener noreferrer"
       className={`tpl-social-icon-btn ${className}`}
-      title={isGh ? 'GitHub Profile' : 'Portfolio Website'}
+      title="GitHub Profile"
     >
-      <Icon size={iconSize} style={{ flexShrink: 0 }} />
+      <Github size={iconSize} style={{ flexShrink: 0 }} />
       <span>{label}</span>
     </a>
   );
+}
+
+/**
+ * Renders masked Portfolio link named "Portfolio" with globe/portfolio icon
+ */
+export function PortfolioLink({ url, className = '', label = 'Portfolio', iconSize = 13 }) {
+  if (!url || !url.trim()) return null;
+  return (
+    <a
+      href={formatUrl(url)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`tpl-social-icon-btn ${className}`}
+      title="Portfolio Website"
+    >
+      <Globe size={iconSize} style={{ flexShrink: 0 }} />
+      <span>{label}</span>
+    </a>
+  );
+}
+
+/**
+ * Fallback helper for legacy single portfolio/github input
+ */
+export function GitHubOrPortfolioLink({ url, className = '', iconSize = 13 }) {
+  if (!url || !url.trim()) return null;
+  const isGh = isGithubUrl(url);
+  return isGh
+    ? <GitHubLink url={url} className={className} iconSize={iconSize} />
+    : <PortfolioLink url={url} className={className} iconSize={iconSize} />;
 }

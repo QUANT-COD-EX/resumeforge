@@ -2,7 +2,6 @@ async function callLLM(prompt, pdfBase64) {
   const groqKey = process.env.GROQ_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
 
-  // 1. Try Gemini first if pdfBase64 is available (Gemini natively understands PDF formatting and multi-column layouts)
   if (geminiKey && geminiKey !== 'your_gemini_api_key_here') {
     try {
       const parts = [{ text: prompt }];
@@ -36,7 +35,6 @@ async function callLLM(prompt, pdfBase64) {
     }
   }
 
-  // 2. Try Groq (Llama 3.3 70B) with extracted text
   if (groqKey && groqKey !== 'your_groq_api_key_here') {
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -72,7 +70,6 @@ async function callLLM(prompt, pdfBase64) {
   return null;
 }
 
-// Robust heuristic parser when AI keys are not configured or offline
 function heuristicParse(text) {
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
 
@@ -86,9 +83,11 @@ function heuristicParse(text) {
   const linkedin = linkedinMatch ? linkedinMatch[0] : '';
 
   const githubMatch = text.match(/github\.com\/[a-zA-Z0-9_-]+/i);
-  const portfolio = githubMatch ? githubMatch[0] : '';
+  const github = githubMatch ? githubMatch[0] : '';
 
-  // Extract name: usually top line that doesn't look like contact info
+  const urls = text.match(/(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.(?:dev|me|io|tech|vercel\.app|netlify\.app|[a-z]{2,})/gi) || [];
+  const portfolio = urls.find((u) => !u.includes('github.com') && !u.includes('linkedin.com') && !u.includes('@')) || '';
+
   let fullName = 'Applicant Name';
   for (const line of lines.slice(0, 5)) {
     if (!line.includes('@') && !line.includes('http') && !line.match(/\d{4}/) && line.length < 40) {
@@ -97,7 +96,6 @@ function heuristicParse(text) {
     }
   }
 
-  // Extract skills by scanning known vocabulary
   const commonTech = [
     'JavaScript', 'TypeScript', 'React.js', 'React', 'Next.js', 'Node.js', 'Express',
     'Python', 'FastAPI', 'Django', 'Java', 'Spring', 'C++', 'C#', 'Go', 'Rust',
@@ -118,6 +116,7 @@ function heuristicParse(text) {
       phone,
       location: '',
       linkedin,
+      github,
       portfolio,
       summary: lines.find((l) => l.length > 80 && !l.includes('@')) || ''
     },
@@ -180,7 +179,8 @@ JSON Schema:
     "phone": "Phone Number",
     "location": "City, Country or State",
     "linkedin": "LinkedIn profile URL or handle",
-    "portfolio": "GitHub or Portfolio URL",
+    "github": "GitHub profile URL or handle",
+    "portfolio": "Personal portfolio or personal website URL",
     "summary": "Professional summary or objective (2-4 sentences)"
   },
   "education": [
@@ -234,7 +234,6 @@ ${resumeText || '(See attached PDF document)'}`;
       return res.json(aiResult);
     }
 
-    // Fallback if LLM unavailable
     const fallbackResult = heuristicParse(resumeText || '');
     return res.json(fallbackResult);
   } catch (err) {

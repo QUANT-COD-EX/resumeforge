@@ -83,7 +83,10 @@ function heuristicParse(text) {
   const linkedin = linkedinMatch ? linkedinMatch[0] : '';
 
   const githubMatch = text.match(/github\.com\/[a-zA-Z0-9_-]+/i);
-  const portfolio = githubMatch ? githubMatch[0] : '';
+  const github = githubMatch ? githubMatch[0] : '';
+
+  const urls = text.match(/(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.(?:dev|me|io|tech|vercel\.app|netlify\.app|[a-z]{2,})/gi) || [];
+  const portfolio = urls.find((u) => !u.includes('github.com') && !u.includes('linkedin.com') && !u.includes('@')) || '';
 
   let fullName = 'Applicant Name';
   for (const line of lines.slice(0, 5)) {
@@ -113,6 +116,7 @@ function heuristicParse(text) {
       phone,
       location: '',
       linkedin,
+      github,
       portfolio,
       summary: lines.find((l) => l.length > 80 && !l.includes('@')) || ''
     },
@@ -175,7 +179,8 @@ JSON Schema:
     "phone": "Phone Number",
     "location": "City, Country or State",
     "linkedin": "LinkedIn profile URL or handle",
-    "portfolio": "GitHub or Portfolio URL",
+    "github": "GitHub profile URL or handle",
+    "portfolio": "Personal portfolio or personal website URL",
     "summary": "Professional summary or objective (2-4 sentences)"
   },
   "education": [

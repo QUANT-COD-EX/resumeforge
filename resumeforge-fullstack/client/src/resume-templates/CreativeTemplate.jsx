@@ -1,5 +1,5 @@
 import React from 'react';
-import { ProjectTitle, LinkedInLink, GitHubOrPortfolioLink } from './templateLinks.jsx';
+import { ProjectTitle, LinkedInLink, GitHubLink, PortfolioLink } from './templateLinks.jsx';
 
 export default function CreativeTemplate({ data }) {
   const { personal, education, experience, skills, projects } = data;
@@ -20,9 +20,14 @@ export default function CreativeTemplate({ data }) {
               <LinkedInLink url={personal.linkedin} className="creative-link-item" iconSize={12} />
             </span>
           )}
-          {(personal.portfolio || personal.github) && (
+          {personal.github && (
             <span className="creative-social-pill">
-              <GitHubOrPortfolioLink url={personal.portfolio || personal.github} className="creative-link-item" iconSize={12} />
+              <GitHubLink url={personal.github} className="creative-link-item" iconSize={12} />
+            </span>
+          )}
+          {personal.portfolio && (
+            <span className="creative-social-pill">
+              <PortfolioLink url={personal.portfolio} className="creative-link-item" iconSize={12} />
             </span>
           )}
         </div>

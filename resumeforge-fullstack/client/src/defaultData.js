@@ -10,7 +10,8 @@ export const INITIAL_RESUME_STATE = {
     phone: '+91 98765 43210',
     location: 'Mumbai, Maharashtra',
     linkedin: 'linkedin.com/in/aaravmehta',
-    portfolio: 'github.com/aaravmehta',
+    github: 'github.com/aaravmehta',
+    portfolio: 'aaravmehta.dev',
     summary: 'Detail-oriented Full-Stack Engineer experienced in building scalable React applications, Python AI microservices, and high-throughput REST APIs. Passionate about clean architecture and developer tooling.'
   },
   education: [
@@ -69,7 +70,7 @@ export const INITIAL_RESUME_STATE = {
 
 export const EMPTY_SECTION_DEFAULTS = {
   personal: {
-    fullName: '', title: '', email: '', phone: '', location: '', linkedin: '', portfolio: '', summary: ''
+    fullName: '', title: '', email: '', phone: '', location: '', linkedin: '', github: '', portfolio: '', summary: ''
   },
   education: [],
   experience: [],
