@@ -62,7 +62,16 @@ export default function App() {
     }
   };
 
-  const handlePrintPdf = () => window.print();
+  const handlePrintPdf = () => {
+    document.body.classList.add('is-exporting-pdf');
+    void document.body.offsetHeight;
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove('is-exporting-pdf');
+      }, 150);
+    }, 60);
+  };
 
   const handleExportDocx = async () => {
     try {

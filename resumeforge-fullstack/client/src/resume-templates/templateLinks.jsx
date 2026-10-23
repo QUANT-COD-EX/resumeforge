@@ -3,10 +3,11 @@ import { Linkedin, Github, Globe, ExternalLink } from 'lucide-react';
 
 export function formatUrl(url) {
   if (!url) return '';
-  const trimmed = url.trim();
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  if (/^mailto:/i.test(trimmed) || /^tel:/i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
+  let trimmed = url.trim();
+  if (!/^https?:\/\//i.test(trimmed) && !/^mailto:/i.test(trimmed) && !/^tel:/i.test(trimmed)) {
+    trimmed = `https://${trimmed}`;
+  }
+  return trimmed;
 }
 
 export function isGithubUrl(url) {
@@ -16,22 +17,23 @@ export function isGithubUrl(url) {
 
 /**
  * Renders the project title masked with the demo/live link.
- * If proj.link exists, the project name itself becomes the link with an external icon.
+ * Made as a native inline-block anchor for full PDF link annotation support.
  */
 export function ProjectTitle({ proj, className = '' }) {
   if (!proj) return null;
 
   if (proj.link && proj.link.trim()) {
+    const href = formatUrl(proj.link);
     return (
       <a
-        href={formatUrl(proj.link)}
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         className={`tpl-project-link ${className}`}
-        title={`View Live Demo: ${proj.name}`}
+        title={`Live Demo: ${href}`}
       >
-        <span>{proj.name}</span>
-        <ExternalLink size={11} className="link-icon" style={{ marginLeft: '4px', verticalAlign: 'middle', display: 'inline-block' }} />
+        <span className="tpl-link-label">{proj.name}</span>
+        <ExternalLink size={10} className="tpl-link-icon" />
       </a>
     );
   }
@@ -42,18 +44,19 @@ export function ProjectTitle({ proj, className = '' }) {
 /**
  * Renders masked LinkedIn link with logo
  */
-export function LinkedInLink({ url, className = '', label = 'LinkedIn', iconSize = 13 }) {
+export function LinkedInLink({ url, className = '', label = 'LinkedIn', iconSize = 12 }) {
   if (!url || !url.trim()) return null;
+  const href = formatUrl(url);
   return (
     <a
-      href={formatUrl(url)}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       className={`tpl-social-icon-btn ${className}`}
-      title="LinkedIn Profile"
+      title={`LinkedIn: ${href}`}
     >
-      <Linkedin size={iconSize} style={{ flexShrink: 0 }} />
-      <span>{label}</span>
+      <Linkedin size={iconSize} className="tpl-link-icon" />
+      <span className="tpl-link-label">{label}</span>
     </a>
   );
 }
@@ -61,18 +64,19 @@ export function LinkedInLink({ url, className = '', label = 'LinkedIn', iconSize
 /**
  * Renders masked GitHub link with logo
  */
-export function GitHubLink({ url, className = '', label = 'GitHub', iconSize = 13 }) {
+export function GitHubLink({ url, className = '', label = 'GitHub', iconSize = 12 }) {
   if (!url || !url.trim()) return null;
+  const href = formatUrl(url);
   return (
     <a
-      href={formatUrl(url)}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       className={`tpl-social-icon-btn ${className}`}
-      title="GitHub Profile"
+      title={`GitHub: ${href}`}
     >
-      <Github size={iconSize} style={{ flexShrink: 0 }} />
-      <span>{label}</span>
+      <Github size={iconSize} className="tpl-link-icon" />
+      <span className="tpl-link-label">{label}</span>
     </a>
   );
 }
@@ -80,18 +84,19 @@ export function GitHubLink({ url, className = '', label = 'GitHub', iconSize = 1
 /**
  * Renders masked Portfolio link named "Portfolio" with globe/portfolio icon
  */
-export function PortfolioLink({ url, className = '', label = 'Portfolio', iconSize = 13 }) {
+export function PortfolioLink({ url, className = '', label = 'Portfolio', iconSize = 12 }) {
   if (!url || !url.trim()) return null;
+  const href = formatUrl(url);
   return (
     <a
-      href={formatUrl(url)}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       className={`tpl-social-icon-btn ${className}`}
-      title="Portfolio Website"
+      title={`Portfolio: ${href}`}
     >
-      <Globe size={iconSize} style={{ flexShrink: 0 }} />
-      <span>{label}</span>
+      <Globe size={iconSize} className="tpl-link-icon" />
+      <span className="tpl-link-label">{label}</span>
     </a>
   );
 }
@@ -99,7 +104,7 @@ export function PortfolioLink({ url, className = '', label = 'Portfolio', iconSi
 /**
  * Fallback helper for legacy single portfolio/github input
  */
-export function GitHubOrPortfolioLink({ url, className = '', iconSize = 13 }) {
+export function GitHubOrPortfolioLink({ url, className = '', iconSize = 12 }) {
   if (!url || !url.trim()) return null;
   const isGh = isGithubUrl(url);
   return isGh

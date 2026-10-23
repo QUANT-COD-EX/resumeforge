@@ -7,6 +7,7 @@ import CreativeTemplate from '../resume-templates/CreativeTemplate.jsx';
 export default function ResumePreview({ resumeData }) {
   const viewportRef = useRef(null);
   const [scale, setScale] = useState(0.75);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     const updateScale = () => {
@@ -22,9 +23,26 @@ export default function ResumePreview({ resumeData }) {
     if (viewportRef.current) observer.observe(viewportRef.current);
     window.addEventListener('resize', updateScale);
 
+    // CRITICAL FOR PRINT-TO-PDF:
+    // Remove the CSS scale transform before printing so the browser PDF engine
+    // calculates exact 1:1 bounding box coordinates for all clickable hyperlinks!
+    const handleBeforePrint = () => {
+      document.body.classList.add('is-exporting-pdf');
+      setIsPrinting(true);
+    };
+    const handleAfterPrint = () => {
+      document.body.classList.remove('is-exporting-pdf');
+      setIsPrinting(false);
+    };
+
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', updateScale);
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
     };
   }, []);
 
@@ -42,7 +60,11 @@ export default function ResumePreview({ resumeData }) {
     <div className="preview-viewport" ref={viewportRef}>
       <div
         className="a4-scale-wrapper"
-        style={{ transform: `scale(${scale})`, height: `${1123 * scale}px` }}
+        style={
+          isPrinting
+            ? { transform: 'none', height: 'auto', width: '210mm' }
+            : { transform: `scale(${scale})`, height: `${1123 * scale}px` }
+        }
       >
         <div id="a4-print-target" className="a4-sheet">
           {renderSelectedTemplate()}
