@@ -6,9 +6,10 @@ import html2pdf from 'html2pdf.js';
  * Guaranteed to produce exactly 1 page (page count === 1).
  *
  * @param {string} fullName - Candidate's full name for the file naming (e.g. Aarav_Mehta_Resume.pdf)
+ * @param {object|null} resumeData - Full resume state to embed into PDF metadata for 100% lossless re-import
  * @returns {Promise<void>}
  */
-export async function downloadResumePdf(fullName = 'Resume') {
+export async function downloadResumePdf(fullName = 'Resume', resumeData = null) {
   const target = document.getElementById('a4-print-target');
   if (!target) {
     throw new Error('Resume print target not found.');
@@ -100,11 +101,25 @@ export async function downloadResumePdf(fullName = 'Resume') {
         }
       })
       .toPdf()
-      .then(function enforceSinglePage() {
+      .then(function enforceSinglePageAndMetadata() {
         const pdf = this.prop.pdf;
         // Safety guard: delete any extra page if created
         while (pdf.internal.getNumberOfPages() > 1) {
           pdf.deletePage(pdf.internal.getNumberOfPages());
+        }
+
+        // Embed lossless metadata into PDF document properties for instant re-import
+        if (resumeData && typeof resumeData === 'object') {
+          try {
+            pdf.setProperties({
+              title: `${cleanName} Resume`,
+              subject: `RESUMEFORGE_METADATA:${encodeURIComponent(JSON.stringify(resumeData))}`,
+              author: cleanName,
+              creator: 'ResumeForge'
+            });
+          } catch (e) {
+            console.warn('Could not embed resume metadata in PDF:', e);
+          }
         }
       })
       .save();

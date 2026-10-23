@@ -75,7 +75,7 @@ export default function App() {
     setIsExportingPdf(true);
     try {
       const candidateName = resumeData?.personal?.fullName || 'Resume';
-      await downloadResumePdf(candidateName);
+      await downloadResumePdf(candidateName, resumeData);
       const cleanFileName = `${(candidateName).trim().replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_')}_Resume.pdf`;
       setDownloadSuccessToast(`Downloaded ${cleanFileName}`);
       setTimeout(() => setDownloadSuccessToast(null), 4000);

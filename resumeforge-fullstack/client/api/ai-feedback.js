@@ -18,9 +18,42 @@ async function callLLM(prompt) {
   const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
   const errors = [];
 
-  // 1. Try Groq (Primary — Llama 3.3 70B & 3.1 8B)
+  // 1. Try Groq (Primary)
   if (groqKey && groqKey !== 'your_groq_api_key_here') {
-    for (const model of ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']) {
+    let availableModels = [];
+    try {
+      const modelsRes = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: { Authorization: `Bearer ${groqKey}` },
+        signal: AbortSignal.timeout(5000)
+      });
+      if (modelsRes.ok) {
+        const mData = await modelsRes.json();
+        const available = (mData.data || []).map((m) => m.id);
+        const preferences = [
+          'openai/gpt-oss-120b',
+          'llama-3.3-70b-versatile',
+          'llama-3.1-70b-versatile',
+          'llama3-70b-8192',
+          'openai/gpt-oss-20b',
+          'llama-3.1-8b-instant',
+          'llama3-8b-8192',
+          'mixtral-8x7b-32768',
+          'gemma2-9b-it'
+        ];
+        availableModels = preferences.filter((p) => available.includes(p));
+        if (availableModels.length === 0 && available.length > 0) {
+          availableModels = available.slice(0, 3);
+        }
+      }
+    } catch (e) {
+      errors.push(`Groq list models exception: ${e.message}`);
+    }
+
+    if (availableModels.length === 0) {
+      availableModels = ['llama-3.1-70b-versatile', 'llama3-70b-8192', 'llama3-8b-8192', 'mixtral-8x7b-32768'];
+    }
+
+    for (const model of availableModels) {
       try {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -65,7 +98,7 @@ async function callLLM(prompt) {
     errors.push('GROQ_API_KEY not found in environment');
   }
 
-  // 2. Try Gemini (Fallback — gemini-1.5-flash & gemini-2.0-flash)
+  // 2. Try Gemini (Fallback)
   if (geminiKey && geminiKey !== 'your_gemini_api_key_here') {
     for (const model of ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']) {
       try {
@@ -107,96 +140,105 @@ async function callLLM(prompt) {
     errors.push('GEMINI_API_KEY not found in environment');
   }
 
-  return { _errors: errors };
+  return { error: 'All AI providers failed', debugErrors: errors };
 }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   const resumeData = req.body?.resumeData || {};
+  const personal = resumeData.personal || {};
+  const experience = resumeData.experience || [];
+  const projects = resumeData.projects || [];
+  const skills = resumeData.skills || {};
 
-  const prompt = `You are a Silicon Valley technical recruiter and senior engineering manager.
-Perform a thorough, honest, and highly specific audit of this resume.
-Do NOT give generic or repetitive praise. Specifically reference the candidate's actual projects, job titles, and tech stack in your critique.
+  const prompt = `You are a strict, senior technical recruiter and hiring manager at a top-tier tech company.
+Analyze this candidate's resume data in depth and return an honest, highly actionable critique.
 
-Evaluate for:
-1. Impact & Measurable Outcomes (metrics, scale, latency, throughput, percentages)
-2. ATS Optimization & Keyword Density
-3. Action Verbs vs Passive Task-listing
-4. Technical Breadth and Project Architecture
+Candidate Profile:
+- Name: ${personal.fullName || 'Candidate'}
+- Title: ${personal.title || 'Not specified'}
+- Summary: ${personal.summary || 'None provided'}
+- Experience (${experience.length} roles): ${JSON.stringify(experience.map((e) => ({ role: e.role, company: e.company, bullets: e.bullets })))}
+- Projects (${projects.length} projects): ${JSON.stringify(projects.map((p) => ({ name: p.name, tech: p.techStack, bullets: p.bullets })))}
+- Technical Skills: ${(skills.technical || []).join(', ')}
 
-Return strictly valid JSON matching this schema:
+Return strictly valid JSON with this exact schema:
 {
-  "score": <float between 1.0 and 10.0 with 1 decimal place, e.g. 7.9>,
+  "score": <number between 5.0 and 9.5 based on impact, metrics, formatting, and ATS readiness>,
   "strengths": [
-    "<Specific praise referencing candidate's actual projects, roles, or achievements>",
-    "<Specific praise on tech stack, skills, or system design>",
-    "<Specific praise on career progression or educational foundation>"
+    "<detailed bullet about a genuine strength in their background, metrics, or technologies>",
+    "<another specific strength>"
   ],
   "weaknesses": [
-    "<Specific constructive criticism on missing metrics, weak bullets, or vague descriptions>",
-    "<Specific critique on summary, skills depth, or project scale>"
+    "<specific, constructive critique about what is missing, vague bullets, or lack of metrics>",
+    "<another concrete weakness>"
   ],
   "improvements": [
-    "<Actionable, concrete rewrite or addition targeting an actual bullet point in their resume>",
-    "<Strategic recommendation for keywords, ATS match, or technical depth>",
-    "<Immediate quick win to elevate recruiter response rate>"
+    "<specific action item candidate should take immediately>",
+    "<action item 2>",
+    "<action item 3>"
   ]
-}
-
-Resume Data:
-${JSON.stringify(resumeData, null, 2)}`;
+}`;
 
   const aiResult = await callLLM(prompt);
 
-  if (aiResult && aiResult.score && Array.isArray(aiResult.strengths) && aiResult.strengths.length > 0) {
+  if (aiResult && aiResult.score && !aiResult.error) {
     return res.json(aiResult);
   }
 
-  // Dynamic context-aware heuristic fallback if both LLMs failed
-  const skills = resumeData?.skills?.technical || [];
-  const tools = resumeData?.skills?.tools || [];
-  const experience = resumeData?.experience || [];
-  const projects = resumeData?.projects || [];
-  const roleTitle = resumeData?.personal?.title || 'Software Engineer';
-
+  // Heuristic fallback
+  const techSkills = skills.technical || [];
   const allBullets = [
     ...experience.flatMap((e) => e.bullets || []),
     ...projects.flatMap((p) => p.bullets || [])
   ];
-  const metricBullets = allBullets.filter((b) => /\d+%|\d+x|\d+\+|\b\d+\b/.test(b));
-  const hasGoodMetrics = metricBullets.length >= 2;
+  const hasNumbers = allBullets.some((b) => /\d+%|\d+x|\d+\+|\$\d+|\b\d+\b/.test(b));
+  const hasActionVerbs = allBullets.some((b) => /^(architected|engineered|spearheaded|developed|optimized|implemented|deployed|built)/i.test(b.trim()));
 
-  const baseScore = 6.8 + (hasGoodMetrics ? 1.4 : 0.4) + Math.min(1.2, (skills.length + tools.length) * 0.12) + (projects.length >= 2 ? 0.6 : 0);
-  const score = Math.min(9.3, Math.max(5.8, baseScore)).toFixed(1);
+  let calculatedScore = 6.2;
+  if (techSkills.length >= 6) calculatedScore += 0.8;
+  if (hasNumbers) calculatedScore += 1.2;
+  if (hasActionVerbs) calculatedScore += 0.6;
+  if (experience.length >= 2 || projects.length >= 2) calculatedScore += 0.6;
+  calculatedScore = Math.min(9.4, Math.max(5.5, Number(calculatedScore.toFixed(1))));
+
+  const strengths = [];
+  if (techSkills.length > 0) {
+    strengths.push(`Technical catalog showcases ${techSkills.length} core technologies (${techSkills.slice(0, 4).join(', ')}).`);
+  }
+  if (experience.length > 0) {
+    strengths.push(`Clear chronological career progression aligned with ${personal.title || 'software engineering'}.`);
+  } else {
+    strengths.push('Clean visual hierarchy optimized for modern ATS parsers.');
+  }
+  if (hasNumbers) {
+    strengths.push('Includes quantitative benchmarks and numerical impact across key bullet points.');
+  }
+
+  const weaknesses = [];
+  if (!hasNumbers) {
+    weaknesses.push('Several experience and project bullets lack quantifiable impact (e.g., % latency reduction, user volume, throughput).');
+  }
+  if (techSkills.length < 8) {
+    weaknesses.push('Technical skills list is relatively lean; consider expanding with testing frameworks and cloud tools.');
+  }
+  if (!personal.summary || personal.summary.length < 80) {
+    weaknesses.push('Professional summary does not clearly state target role, years of experience, or primary value proposition.');
+  }
+
+  const improvements = [
+    `Format every bullet point using Google's XYZ formula: "Accomplished [X], measured by [Y], by doing [Z]".`,
+    'Feature 1-2 end-to-end full-stack projects showcasing architecture complexity.',
+    'Run the Tailor to JD tool to inject role-specific keywords prior to final PDF export.'
+  ];
 
   return res.json({
-    score: Number(score),
+    score: calculatedScore,
     provider: 'Heuristic Engine (Keys offline or redeploy pending on Vercel)',
-    debugErrors: aiResult?._errors || [],
-    strengths: [
-      `Technical catalog showcases ${skills.length} core technologies (${skills.slice(0, 4).join(', ') || 'software stack'}).`,
-      projects.length > 0
-        ? `Hands-on practical implementation demonstrated in ${projects.map((p) => p.name).filter(Boolean).slice(0, 2).join(' and ') || 'projects'}.`
-        : `Clear chronological career progression aligned with ${roleTitle}.`,
-      hasGoodMetrics
-        ? `Includes quantifiable achievements across ${metricBullets.length} project/experience bullets.`
-        : `Clean visual hierarchy optimized for modern ATS parsers.`
-    ],
-    weaknesses: [
-      hasGoodMetrics
-        ? `Professional summary could highlight specific architecture scale, system throughput, or business ROI.`
-        : `Several experience and project bullets lack quantifiable impact (e.g., % latency reduction, user volume, throughput).`,
-      skills.length < 6
-        ? `Technical skills list is relatively lean; consider expanding with testing frameworks and cloud tools.`
-        : `Ensure every bullet leads with a strong past-tense action verb (Spearheaded, Architected) rather than descriptive tasks.`
-    ],
-    improvements: [
-      `Format every bullet point using Google's XYZ formula: "Accomplished [X], measured by [Y], by doing [Z]".`,
-      projects[0]?.name
-        ? `Add concrete production metrics or benchmark numbers to "${projects[0].name}".`
-        : `Feature 1-2 end-to-end full-stack projects showcasing architecture complexity.`,
-      `Run the Tailor to JD tool to inject role-specific keywords prior to final PDF export.`
-    ]
+    debugErrors: aiResult?.debugErrors || [],
+    strengths: strengths.slice(0, 3),
+    weaknesses: weaknesses.slice(0, 3),
+    improvements
   });
 }

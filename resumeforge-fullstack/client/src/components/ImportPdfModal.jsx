@@ -9,7 +9,8 @@ import {
   Sparkles,
   ArrowRight
 } from 'lucide-react';
-import { extractText } from 'unpdf';
+import { extractText, extractLinks } from 'unpdf';
+import { parseResumeFromTextAndLinks } from '../utils/resumeParser.js';
 
 export default function ImportPdfModal({ isOpen, onClose, onImport }) {
   const [file, setFile] = useState(null);
@@ -33,48 +34,97 @@ export default function ImportPdfModal({ isOpen, onClose, onImport }) {
     setErrorMsg('');
     setParsedData(null);
     setLoading(true);
-    setProgressMsg('Extracting text from PDF...');
+    setProgressMsg('Extracting text and links from PDF...');
 
     try {
-      // 1. Extract text in browser using unpdf
       const arrayBuffer = await selectedFile.arrayBuffer();
+      const uint8 = new Uint8Array(arrayBuffer);
+      const latin1 = new TextDecoder('latin1').decode(arrayBuffer);
+
+      // Fast-path: check if file was exported by ResumeForge with embedded JSON
+      const metaMatch = latin1.match(/RESUMEFORGE_METADATA:([a-zA-Z0-9%_\-\.]+)/);
+      if (metaMatch) {
+        try {
+          const decoded = JSON.parse(decodeURIComponent(metaMatch[1]));
+          if (decoded && decoded.personal && (decoded.personal.fullName || decoded.personal.email)) {
+            setParsedData(decoded);
+            setProgressMsg('');
+            setLoading(false);
+            return;
+          }
+        } catch (metaErr) {
+          console.warn('Metadata parse error:', metaErr);
+        }
+      }
+
+      // 1. Extract clickable links from PDF annotations
+      let extractedLinks = [];
+      try {
+        const linkRes = await extractLinks(uint8);
+        extractedLinks = linkRes?.links || [];
+      } catch (err) {
+        console.warn('Link extraction error:', err);
+      }
+
+      // 2. Extract text stream from PDF
       let extractedText = '';
       try {
-        const result = await extractText(arrayBuffer);
+        const result = await extractText(uint8);
         extractedText = Array.isArray(result?.text) ? result.text.join('\n') : (result?.text || '');
       } catch (err) {
-        console.warn('unpdf text extraction error, fallback to base64 upload:', err);
+        console.warn('unpdf text extraction error:', err);
       }
 
-      // 2. Convert to base64 for multimodal parsing if needed
-      setProgressMsg('Analyzing resume structure & extracting details...');
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const res = reader.result;
-          const base64Data = typeof res === 'string' ? res.split(',')[1] : '';
-          resolve(base64Data);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(selectedFile);
-      });
-
-      // 3. Send to API for precise structuring
-      setProgressMsg('Structuring sections with AI parsing engine...');
-      const response = await fetch('/api/parse-resume', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resumeText: extractedText,
-          pdfBase64: base64
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to parse resume (Status: ' + response.status + ')');
+      // 3. If text is empty/minimal (canvas or scanned PDF), run client-side OCR
+      if (extractedText.trim().length < 50) {
+        setProgressMsg('Reading image-based PDF (running OCR)...');
+        const startIdx = latin1.indexOf('\xff\xd8\xff');
+        const endIdx = latin1.lastIndexOf('\xff\xd9');
+        if (startIdx !== -1 && endIdx > startIdx) {
+          try {
+            const imgBytes = uint8.subarray(startIdx, endIdx + 2);
+            const { createWorker } = await import('tesseract.js');
+            const worker = await createWorker('eng');
+            const ocrRet = await worker.recognize(imgBytes);
+            extractedText = ocrRet?.data?.text || '';
+            await worker.terminate();
+          } catch (ocrErr) {
+            console.warn('Direct JPEG OCR error:', ocrErr);
+          }
+        }
       }
 
-      const structuredResume = await response.json();
+      // 4. Send to /api/parse-resume or run client parser
+      setProgressMsg('Structuring resume into form inputs...');
+      let structuredResume = null;
+      try {
+        const response = await fetch('/api/parse-resume', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resumeText: extractedText,
+            links: extractedLinks,
+            filename: selectedFile.name
+          })
+        });
+
+        if (response.ok) {
+          structuredResume = await response.json();
+        }
+      } catch (netErr) {
+        console.warn('Network parse error, running client heuristic engine:', netErr);
+      }
+
+      // If API failed or returned dummy placeholder, run local heuristic engine
+      if (
+        !structuredResume ||
+        !structuredResume.personal ||
+        !structuredResume.personal.fullName ||
+        structuredResume.personal.fullName === 'Applicant Name'
+      ) {
+        structuredResume = parseResumeFromTextAndLinks(extractedText, extractedLinks, selectedFile.name);
+      }
+
       setParsedData(structuredResume);
       setProgressMsg('');
     } catch (err) {
@@ -156,7 +206,7 @@ export default function ImportPdfModal({ isOpen, onClose, onImport }) {
                   {file ? file.name : 'Click to upload or drag & drop PDF'}
                 </div>
                 <div className="dropzone-subtitle">
-                  Supports standard ATS resumes and single/multi-page PDFs
+                  Supports standard ATS resumes, exported ResumeForge PDFs, and scanned PDFs
                 </div>
               </div>
 
@@ -214,13 +264,17 @@ export default function ImportPdfModal({ isOpen, onClose, onImport }) {
                     <div className="parsed-stat-label">Education</div>
                   </div>
                   <div className="parsed-stat-card">
+                    <div className="parsed-stat-number">{projCount}</div>
+                    <div className="parsed-stat-label">Projects</div>
+                  </div>
+                  <div className="parsed-stat-card">
                     <div className="parsed-stat-number">{skillCount}</div>
                     <div className="parsed-stat-label">Skills</div>
                   </div>
                 </div>
 
                 {parsedData.skills?.technical?.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
                     {parsedData.skills.technical.slice(0, 8).map((s, idx) => (
                       <span key={idx} className="skill-chip" style={{ fontSize: '0.72rem', padding: '3px 8px' }}>
                         {s}
