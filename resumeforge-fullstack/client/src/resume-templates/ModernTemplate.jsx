@@ -1,4 +1,5 @@
 import React from 'react';
+import { ProjectTitle, LinkedInLink, GitHubOrPortfolioLink } from './templateLinks.jsx';
 
 export default function ModernTemplate({ data }) {
   const { personal, education, experience, skills, projects } = data;
@@ -17,8 +18,16 @@ export default function ModernTemplate({ data }) {
             {personal.email && <li>{personal.email}</li>}
             {personal.phone && <li>{personal.phone}</li>}
             {personal.location && <li>{personal.location}</li>}
-            {personal.linkedin && <li>{personal.linkedin}</li>}
-            {personal.portfolio && <li>{personal.portfolio}</li>}
+            {personal.linkedin && (
+              <li>
+                <LinkedInLink url={personal.linkedin} className="modern-contact-link" />
+              </li>
+            )}
+            {(personal.portfolio || personal.github) && (
+              <li>
+                <GitHubOrPortfolioLink url={personal.portfolio || personal.github} className="modern-contact-link" />
+              </li>
+            )}
           </ul>
         </div>
 
@@ -102,10 +111,11 @@ export default function ModernTemplate({ data }) {
               <div key={proj.id} className="modern-entry">
                 <div className="modern-entry-header">
                   <div>
-                    <h4 className="modern-role">{proj.name}</h4>
+                    <h4 className="modern-role">
+                      <ProjectTitle proj={proj} className="modern-project-title-link" />
+                    </h4>
                     {proj.techStack && <span className="modern-tech">{proj.techStack}</span>}
                   </div>
-                  {proj.link && <span className="modern-link">{proj.link}</span>}
                 </div>
                 <ul className="modern-bullets">
                   {proj.bullets.filter(Boolean).map((b, i) => <li key={i}>{b}</li>)}

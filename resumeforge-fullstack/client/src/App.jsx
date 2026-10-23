@@ -85,18 +85,24 @@ export default function App() {
     }
 
     const { personal, education, experience, skills, projects } = resumeData;
+    const socialLinks = [
+      personal.linkedin ? `<a href="${personal.linkedin}">LinkedIn</a>` : '',
+      (personal.portfolio || personal.github) ? `<a href="${personal.portfolio || personal.github}">GitHub</a>` : ''
+    ].filter(Boolean);
+    const contactLine = [personal.title, personal.email, personal.phone, personal.location, ...socialLinks].filter(Boolean).join(' | ');
+
     const htmlContent = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head><meta charset='utf-8'><title>${personal.fullName} Resume</title></head>
       <body style="font-family: Calibri, Arial, sans-serif;">
         <h1>${personal.fullName}</h1>
-        <p>${personal.title} | ${personal.email} | ${personal.phone} | ${personal.location}</p>
+        <p>${contactLine}</p>
         <hr/>
         <h3>Summary</h3><p>${personal.summary}</p>
         <h3>Experience</h3>
         ${experience.map((e) => `<p><b>${e.role}</b> - ${e.company} (${e.startDate} - ${e.endDate})</p><ul>${e.bullets.map((b) => `<li>${b}</li>`).join('')}</ul>`).join('')}
         <h3>Projects</h3>
-        ${projects.map((p) => `<p><b>${p.name}</b> (${p.techStack})</p><ul>${p.bullets.map((b) => `<li>${b}</li>`).join('')}</ul>`).join('')}
+        ${projects.map((p) => `<p><b>${p.link ? `<a href="${p.link}">${p.name}</a>` : p.name}</b> (${p.techStack})</p><ul>${p.bullets.map((b) => `<li>${b}</li>`).join('')}</ul>`).join('')}
         <h3>Education</h3>
         ${education.map((ed) => `<p><b>${ed.degree}</b>, ${ed.institution} (${ed.startDate} - ${ed.endDate}) — GPA: ${ed.gpa}</p>`).join('')}
         <h3>Skills</h3>

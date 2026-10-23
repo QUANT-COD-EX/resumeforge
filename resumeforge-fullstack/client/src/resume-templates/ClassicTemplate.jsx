@@ -1,15 +1,27 @@
 import React from 'react';
+import { ProjectTitle, LinkedInLink, GitHubOrPortfolioLink } from './templateLinks.jsx';
 
 export default function ClassicTemplate({ data }) {
   const { personal, education, experience, skills, projects } = data;
-  const contactItems = [personal.location, personal.phone, personal.email, personal.linkedin, personal.portfolio].filter(Boolean);
 
   return (
     <div className="tpl-classic">
       <header className="classic-header">
         <h1 className="classic-name">{personal.fullName || 'YOUR NAME'}</h1>
         {personal.title && <p className="classic-title">{personal.title}</p>}
-        <div className="classic-contact-bar">{contactItems.join('  •  ')}</div>
+        <div className="classic-contact-bar">
+          {personal.location && <span>{personal.location}</span>}
+          {personal.location && personal.phone && <span className="classic-sep"> • </span>}
+          {personal.phone && <span>{personal.phone}</span>}
+          {(personal.location || personal.phone) && personal.email && <span className="classic-sep"> • </span>}
+          {personal.email && <span>{personal.email}</span>}
+          {(personal.location || personal.phone || personal.email) && personal.linkedin && <span className="classic-sep"> • </span>}
+          {personal.linkedin && <LinkedInLink url={personal.linkedin} className="classic-link-item" iconSize={12} />}
+          {(personal.portfolio || personal.github) && <span className="classic-sep"> • </span>}
+          {(personal.portfolio || personal.github) && (
+            <GitHubOrPortfolioLink url={personal.portfolio || personal.github} className="classic-link-item" iconSize={12} />
+          )}
+        </div>
       </header>
 
       {personal.summary && (
@@ -64,10 +76,11 @@ export default function ClassicTemplate({ data }) {
             <div key={proj.id} className="classic-block">
               <div className="classic-row-between">
                 <div>
-                  <strong>{proj.name}</strong>
+                  <strong>
+                    <ProjectTitle proj={proj} className="classic-proj-title-link" />
+                  </strong>
                   {proj.techStack && <span className="classic-tech"> | {proj.techStack}</span>}
                 </div>
-                {proj.link && <span className="classic-link">{proj.link}</span>}
               </div>
               <ul className="classic-bullets">
                 {proj.bullets.filter(Boolean).map((b, i) => <li key={i}>{b}</li>)}

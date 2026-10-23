@@ -1,4 +1,5 @@
 import React from 'react';
+import { ProjectTitle, LinkedInLink, GitHubOrPortfolioLink } from './templateLinks.jsx';
 
 export default function MinimalTemplate({ data }) {
   const { personal, education, experience, skills, projects } = data;
@@ -14,7 +15,16 @@ export default function MinimalTemplate({ data }) {
           {personal.email && <div>{personal.email}</div>}
           {personal.phone && <div>{personal.phone}</div>}
           {personal.location && <div>{personal.location}</div>}
-          {personal.portfolio && <div>{personal.portfolio}</div>}
+          {personal.linkedin && (
+            <div>
+              <LinkedInLink url={personal.linkedin} className="minimal-link-item" iconSize={12} />
+            </div>
+          )}
+          {(personal.portfolio || personal.github) && (
+            <div>
+              <GitHubOrPortfolioLink url={personal.portfolio || personal.github} className="minimal-link-item" iconSize={12} />
+            </div>
+          )}
         </div>
       </header>
 
@@ -51,9 +61,10 @@ export default function MinimalTemplate({ data }) {
             {projects.map((proj) => (
               <div key={proj.id} className="minimal-item">
                 <div className="minimal-item-head">
-                  <strong>{proj.name}</strong>
+                  <strong>
+                    <ProjectTitle proj={proj} className="minimal-proj-title-link" />
+                  </strong>
                   {proj.techStack && <span className="minimal-muted"> · {proj.techStack}</span>}
-                  {proj.link && <span className="minimal-date">{proj.link}</span>}
                 </div>
                 <ul className="minimal-list">
                   {proj.bullets.filter(Boolean).map((b, i) => <li key={i}>{b}</li>)}

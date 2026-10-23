@@ -1,4 +1,5 @@
 import React from 'react';
+import { ProjectTitle, LinkedInLink, GitHubOrPortfolioLink } from './templateLinks.jsx';
 
 export default function CreativeTemplate({ data }) {
   const { personal, education, experience, skills, projects } = data;
@@ -14,8 +15,16 @@ export default function CreativeTemplate({ data }) {
           {personal.email && <span>{personal.email}</span>}
           {personal.phone && <span>{personal.phone}</span>}
           {personal.location && <span>{personal.location}</span>}
-          {personal.linkedin && <span>{personal.linkedin}</span>}
-          {personal.portfolio && <span>{personal.portfolio}</span>}
+          {personal.linkedin && (
+            <span className="creative-social-pill">
+              <LinkedInLink url={personal.linkedin} className="creative-link-item" iconSize={12} />
+            </span>
+          )}
+          {(personal.portfolio || personal.github) && (
+            <span className="creative-social-pill">
+              <GitHubOrPortfolioLink url={personal.portfolio || personal.github} className="creative-link-item" iconSize={12} />
+            </span>
+          )}
         </div>
       </header>
 
@@ -53,10 +62,11 @@ export default function CreativeTemplate({ data }) {
                   <div key={proj.id} className="creative-card">
                     <div className="creative-card-top">
                       <div>
-                        <h4>{proj.name}</h4>
+                        <h4>
+                          <ProjectTitle proj={proj} className="creative-proj-title-link" />
+                        </h4>
                         <span className="creative-company">{proj.techStack}</span>
                       </div>
-                      {proj.link && <span className="creative-link">{proj.link}</span>}
                     </div>
                     <ul className="creative-bullets">
                       {proj.bullets.filter(Boolean).map((b, i) => <li key={i}>{b}</li>)}
