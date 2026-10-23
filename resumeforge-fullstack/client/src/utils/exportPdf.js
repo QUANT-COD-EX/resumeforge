@@ -31,24 +31,31 @@ export async function downloadResumePdf(fullName = 'Resume') {
     scaleWrapper.style.height = 'auto';
   }
 
-  // Measure actual content height
+  // Force reflow and measure unscaled height
   void target.offsetHeight;
-  const contentHeight = target.scrollHeight;
+  const unscaledHeight = target.scrollHeight;
   const a4MaxHeightPx = 1120; // 296.5mm in pixels at 96 DPI (strictly avoids subpixel spillover onto page 2)
+  const fitRatio = unscaledHeight > a4MaxHeightPx ? a4MaxHeightPx / unscaledHeight : 1;
 
-  // If content is longer than 1 standard A4 sheet, scale it so everything fits strictly on 1 page
-  const fitRatio = contentHeight > a4MaxHeightPx ? a4MaxHeightPx / contentHeight : 1;
+  // Save original target inline styles
+  const prevTargetTransform = target.style.transform;
+  const prevTargetOrigin = target.style.transformOrigin;
+  const prevTargetHeight = target.style.height;
+  const prevTargetMaxH = target.style.maxHeight;
+  const prevTargetMinH = target.style.minHeight;
+  const prevTargetOverflow = target.style.overflow;
+
+  // If content exceeds 1 A4 page, scale it proportionally so it fits completely on 1 single page
   if (fitRatio < 1) {
     target.style.transformOrigin = 'top center';
     target.style.transform = `scale(${fitRatio.toFixed(4)})`;
+    target.style.height = `${(unscaledHeight * fitRatio).toFixed(1)}px`;
+    target.style.maxHeight = `${a4MaxHeightPx}px`;
+    target.style.minHeight = '0px';
+  } else {
+    target.style.maxHeight = `${a4MaxHeightPx}px`;
+    target.style.minHeight = '0px';
   }
-
-  // Lock target boundaries strictly to 1 A4 page height
-  const prevTargetHeight = target.style.height;
-  const prevTargetMaxH = target.style.maxHeight;
-  const prevTargetOverflow = target.style.overflow;
-  target.style.height = '296.5mm';
-  target.style.maxHeight = '296.5mm';
   target.style.overflow = 'hidden';
 
   void target.offsetHeight;
@@ -62,7 +69,9 @@ export async function downloadResumePdf(fullName = 'Resume') {
       useCORS: true,
       logging: false,
       scrollY: 0,
-      scrollX: 0
+      scrollX: 0,
+      width: 794,
+      height: a4MaxHeightPx
     },
     jsPDF: {
       unit: 'mm',
@@ -74,15 +83,31 @@ export async function downloadResumePdf(fullName = 'Resume') {
 
   try {
     const worker = html2pdf().from(target).set(opt);
-    const pdf = await worker.toPdf().get('pdf');
 
-    // STRICT GUARANTEE: If any subpixel rounding generated an extra page, delete it immediately
-    while (pdf.internal.getNumberOfPages() > 1) {
-      pdf.deletePage(pdf.internal.getNumberOfPages());
-    }
-
-    // Directly save and trigger browser download
-    pdf.save(filename);
+    await worker
+      .toCanvas()
+      .then(function clampCanvasToSingleA4() {
+        const canvas = this.prop.canvas;
+        const pxPageHeight = Math.floor(canvas.width * this.prop.pageSize.inner.ratio);
+        // Hard clamping guarantee: ensure canvas never exceeds exactly 1 A4 page height
+        if (canvas.height > pxPageHeight) {
+          const clamped = document.createElement('canvas');
+          clamped.width = canvas.width;
+          clamped.height = pxPageHeight;
+          const ctx = clamped.getContext('2d');
+          ctx.drawImage(canvas, 0, 0);
+          this.prop.canvas = clamped;
+        }
+      })
+      .toPdf()
+      .then(function enforceSinglePage() {
+        const pdf = this.prop.pdf;
+        // Safety guard: delete any extra page if created
+        while (pdf.internal.getNumberOfPages() > 1) {
+          pdf.deletePage(pdf.internal.getNumberOfPages());
+        }
+      })
+      .save();
   } finally {
     // Restore all original styles immediately
     if (scaleWrapper) {
@@ -90,10 +115,11 @@ export async function downloadResumePdf(fullName = 'Resume') {
       scaleWrapper.style.transition = prevTransition;
       scaleWrapper.style.height = prevHeight;
     }
-    target.style.transform = '';
-    target.style.transformOrigin = '';
+    target.style.transform = prevTargetTransform;
+    target.style.transformOrigin = prevTargetOrigin;
     target.style.height = prevTargetHeight;
     target.style.maxHeight = prevTargetMaxH;
+    target.style.minHeight = prevTargetMinH;
     target.style.overflow = prevTargetOverflow;
   }
 }
