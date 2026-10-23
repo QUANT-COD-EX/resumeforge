@@ -3,26 +3,33 @@ import { ProjectTitle, LinkedInLink, GitHubLink, PortfolioLink } from './templat
 
 export default function ClassicTemplate({ data }) {
   const { personal, education, experience, skills, projects } = data;
+  const hasContact = personal.location || personal.phone || personal.email || personal.linkedin || personal.github || personal.portfolio;
+  const hasSkills = (skills?.technical?.length > 0) || (skills?.tools?.length > 0) || (skills?.soft?.length > 0);
+  const hasHeader = personal.fullName || personal.title || hasContact;
 
   return (
     <div className="tpl-classic">
-      <header className="classic-header">
-        <h1 className="classic-name">{personal.fullName || 'YOUR NAME'}</h1>
-        {personal.title && <p className="classic-title">{personal.title}</p>}
-        <div className="classic-contact-bar">
-          {personal.location && <span>{personal.location}</span>}
-          {personal.location && personal.phone && <span className="classic-sep"> • </span>}
-          {personal.phone && <span>{personal.phone}</span>}
-          {(personal.location || personal.phone) && personal.email && <span className="classic-sep"> • </span>}
-          {personal.email && <span>{personal.email}</span>}
-          {(personal.location || personal.phone || personal.email) && personal.linkedin && <span className="classic-sep"> • </span>}
-          {personal.linkedin && <LinkedInLink url={personal.linkedin} className="classic-link-item" iconSize={12} />}
-          {personal.github && <span className="classic-sep"> • </span>}
-          {personal.github && <GitHubLink url={personal.github} className="classic-link-item" iconSize={12} />}
-          {personal.portfolio && <span className="classic-sep"> • </span>}
-          {personal.portfolio && <PortfolioLink url={personal.portfolio} className="classic-link-item" iconSize={12} />}
-        </div>
-      </header>
+      {hasHeader && (
+        <header className="classic-header">
+          {personal.fullName && <h1 className="classic-name">{personal.fullName}</h1>}
+          {personal.title && <p className="classic-title">{personal.title}</p>}
+          {hasContact && (
+            <div className="classic-contact-bar">
+              {personal.location && <span>{personal.location}</span>}
+              {personal.location && personal.phone && <span className="classic-sep"> • </span>}
+              {personal.phone && <span>{personal.phone}</span>}
+              {(personal.location || personal.phone) && personal.email && <span className="classic-sep"> • </span>}
+              {personal.email && <span>{personal.email}</span>}
+              {(personal.location || personal.phone || personal.email) && personal.linkedin && <span className="classic-sep"> • </span>}
+              {personal.linkedin && <LinkedInLink url={personal.linkedin} className="classic-link-item" iconSize={12} />}
+              {personal.github && <span className="classic-sep"> • </span>}
+              {personal.github && <GitHubLink url={personal.github} className="classic-link-item" iconSize={12} />}
+              {personal.portfolio && <span className="classic-sep"> • </span>}
+              {personal.portfolio && <PortfolioLink url={personal.portfolio} className="classic-link-item" iconSize={12} />}
+            </div>
+          )}
+        </header>
+      )}
 
       {personal.summary && (
         <section className="classic-section">
@@ -90,14 +97,16 @@ export default function ClassicTemplate({ data }) {
         </section>
       )}
 
-      <section className="classic-section">
-        <h2 className="classic-section-heading">Technical Skills</h2>
-        <div className="classic-skills-lines">
-          {skills.technical.length > 0 && <p><strong>Languages & Frameworks:</strong> {skills.technical.join(', ')}</p>}
-          {skills.tools.length > 0 && <p><strong>Developer Tools:</strong> {skills.tools.join(', ')}</p>}
-          {skills.soft.length > 0 && <p><strong>Core Competencies:</strong> {skills.soft.join(', ')}</p>}
-        </div>
-      </section>
+      {hasSkills && (
+        <section className="classic-section">
+          <h2 className="classic-section-heading">Technical Skills</h2>
+          <div className="classic-skills-lines">
+            {skills.technical?.length > 0 && <p><strong>Languages & Frameworks:</strong> {skills.technical.join(', ')}</p>}
+            {skills.tools?.length > 0 && <p><strong>Developer Tools:</strong> {skills.tools.join(', ')}</p>}
+            {skills.soft?.length > 0 && <p><strong>Core Competencies:</strong> {skills.soft.join(', ')}</p>}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -26,6 +26,14 @@ body {
   overflow: hidden;
   height: 100vh;
 }
+@media (max-width: 900px) {
+  html, body {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100% !important;
+  }
+}
 button { font-family: inherit; cursor: pointer; border: none; transition: all 0.18s ease; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 .fade-in { animation: fadeIn 0.25s ease-out; }

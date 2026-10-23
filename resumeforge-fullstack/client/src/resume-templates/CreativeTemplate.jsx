@@ -3,35 +3,42 @@ import { ProjectTitle, LinkedInLink, GitHubLink, PortfolioLink } from './templat
 
 export default function CreativeTemplate({ data }) {
   const { personal, education, experience, skills, projects } = data;
+  const hasContact = personal.email || personal.phone || personal.location || personal.linkedin || personal.github || personal.portfolio;
+  const hasSkills = (skills?.technical?.length > 0) || (skills?.tools?.length > 0) || (skills?.soft?.length > 0);
+  const hasHeader = personal.fullName || personal.title || hasContact;
 
   return (
     <div className="tpl-creative">
-      <header className="creative-banner">
-        <div className="creative-banner-main">
-          <h1 className="creative-name">{personal.fullName || 'Your Name'}</h1>
-          <p className="creative-tagline">{personal.title}</p>
-        </div>
-        <div className="creative-contact-pills">
-          {personal.email && <span>{personal.email}</span>}
-          {personal.phone && <span>{personal.phone}</span>}
-          {personal.location && <span>{personal.location}</span>}
-          {personal.linkedin && (
-            <span className="creative-social-pill">
-              <LinkedInLink url={personal.linkedin} className="creative-link-item" iconSize={12} />
-            </span>
+      {hasHeader && (
+        <header className="creative-banner">
+          <div className="creative-banner-main">
+            {personal.fullName && <h1 className="creative-name">{personal.fullName}</h1>}
+            {personal.title && <p className="creative-tagline">{personal.title}</p>}
+          </div>
+          {hasContact && (
+            <div className="creative-contact-pills">
+              {personal.email && <span>{personal.email}</span>}
+              {personal.phone && <span>{personal.phone}</span>}
+              {personal.location && <span>{personal.location}</span>}
+              {personal.linkedin && (
+                <span className="creative-social-pill">
+                  <LinkedInLink url={personal.linkedin} className="creative-link-item" iconSize={12} />
+                </span>
+              )}
+              {personal.github && (
+                <span className="creative-social-pill">
+                  <GitHubLink url={personal.github} className="creative-link-item" iconSize={12} />
+                </span>
+              )}
+              {personal.portfolio && (
+                <span className="creative-social-pill">
+                  <PortfolioLink url={personal.portfolio} className="creative-link-item" iconSize={12} />
+                </span>
+              )}
+            </div>
           )}
-          {personal.github && (
-            <span className="creative-social-pill">
-              <GitHubLink url={personal.github} className="creative-link-item" iconSize={12} />
-            </span>
-          )}
-          {personal.portfolio && (
-            <span className="creative-social-pill">
-              <PortfolioLink url={personal.portfolio} className="creative-link-item" iconSize={12} />
-            </span>
-          )}
-        </div>
-      </header>
+        </header>
+      )}
 
       <div className="creative-body">
         {personal.summary && (
@@ -83,14 +90,16 @@ export default function CreativeTemplate({ data }) {
           </div>
 
           <div className="creative-col-secondary">
-            <section className="creative-section">
-              <h2 className="creative-heading">Skills & Stack</h2>
-              <div className="creative-Badge-cloud">
-                {[...skills.technical, ...skills.tools, ...skills.soft].map((skill) => (
-                  <span key={skill} className="creative-skill-pill">{skill}</span>
-                ))}
-              </div>
-            </section>
+            {hasSkills && (
+              <section className="creative-section">
+                <h2 className="creative-heading">Skills & Stack</h2>
+                <div className="creative-Badge-cloud">
+                  {[...(skills.technical || []), ...(skills.tools || []), ...(skills.soft || [])].map((skill) => (
+                    <span key={skill} className="creative-skill-pill">{skill}</span>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {education.length > 0 && (
               <section className="creative-section">

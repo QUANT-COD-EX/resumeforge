@@ -3,35 +3,42 @@ import { ProjectTitle, LinkedInLink, GitHubLink, PortfolioLink } from './templat
 
 export default function MinimalTemplate({ data }) {
   const { personal, education, experience, skills, projects } = data;
+  const hasContact = personal.email || personal.phone || personal.location || personal.linkedin || personal.github || personal.portfolio;
+  const hasSkills = (skills?.technical?.length > 0) || (skills?.tools?.length > 0) || (skills?.soft?.length > 0);
+  const hasHeader = personal.fullName || personal.title || hasContact;
 
   return (
     <div className="tpl-minimal">
-      <header className="minimal-header">
-        <div>
-          <h1 className="minimal-name">{personal.fullName || 'Your Name'}</h1>
-          <p className="minimal-role">{personal.title}</p>
-        </div>
-        <div className="minimal-contact">
-          {personal.email && <div>{personal.email}</div>}
-          {personal.phone && <div>{personal.phone}</div>}
-          {personal.location && <div>{personal.location}</div>}
-          {personal.linkedin && (
-            <div>
-              <LinkedInLink url={personal.linkedin} className="minimal-link-item" iconSize={12} />
+      {hasHeader && (
+        <header className="minimal-header">
+          <div>
+            {personal.fullName && <h1 className="minimal-name">{personal.fullName}</h1>}
+            {personal.title && <p className="minimal-role">{personal.title}</p>}
+          </div>
+          {hasContact && (
+            <div className="minimal-contact">
+              {personal.email && <div>{personal.email}</div>}
+              {personal.phone && <div>{personal.phone}</div>}
+              {personal.location && <div>{personal.location}</div>}
+              {personal.linkedin && (
+                <div>
+                  <LinkedInLink url={personal.linkedin} className="minimal-link-item" iconSize={12} />
+                </div>
+              )}
+              {personal.github && (
+                <div>
+                  <GitHubLink url={personal.github} className="minimal-link-item" iconSize={12} />
+                </div>
+              )}
+              {personal.portfolio && (
+                <div>
+                  <PortfolioLink url={personal.portfolio} className="minimal-link-item" iconSize={12} />
+                </div>
+              )}
             </div>
           )}
-          {personal.github && (
-            <div>
-              <GitHubLink url={personal.github} className="minimal-link-item" iconSize={12} />
-            </div>
-          )}
-          {personal.portfolio && (
-            <div>
-              <PortfolioLink url={personal.portfolio} className="minimal-link-item" iconSize={12} />
-            </div>
-          )}
-        </div>
-      </header>
+        </header>
+      )}
 
       {personal.summary && (
         <section className="minimal-grid-section">
@@ -97,12 +104,14 @@ export default function MinimalTemplate({ data }) {
         </section>
       )}
 
-      <section className="minimal-grid-section">
-        <div className="minimal-label">Skills</div>
-        <div className="minimal-content minimal-skills-row">
-          {[...skills.technical, ...skills.tools, ...skills.soft].join('   ·   ')}
-        </div>
-      </section>
+      {hasSkills && (
+        <section className="minimal-grid-section">
+          <div className="minimal-label">Skills</div>
+          <div className="minimal-content minimal-skills-row">
+            {[...(skills.technical || []), ...(skills.tools || []), ...(skills.soft || [])].join('   ·   ')}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -25,10 +25,12 @@ export async function downloadResumePdf(fullName = 'Resume', resumeData = null) 
   const prevTransform = scaleWrapper ? scaleWrapper.style.transform : '';
   const prevTransition = scaleWrapper ? scaleWrapper.style.transition : '';
   const prevHeight = scaleWrapper ? scaleWrapper.style.height : '';
+  const prevWidth = scaleWrapper ? scaleWrapper.style.width : '';
 
   if (scaleWrapper) {
     scaleWrapper.style.transition = 'none';
     scaleWrapper.style.transform = 'none';
+    scaleWrapper.style.width = '210mm';
     scaleWrapper.style.height = 'auto';
   }
 
@@ -129,6 +131,7 @@ export async function downloadResumePdf(fullName = 'Resume', resumeData = null) 
       scaleWrapper.style.transform = prevTransform;
       scaleWrapper.style.transition = prevTransition;
       scaleWrapper.style.height = prevHeight;
+      scaleWrapper.style.width = prevWidth;
     }
     target.style.transform = prevTargetTransform;
     target.style.transformOrigin = prevTargetOrigin;

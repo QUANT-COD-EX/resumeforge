@@ -262,3 +262,175 @@
   font-size: 0.72rem;
   color: var(--text-muted);
 }
+
+/* ==========================================================================
+   RESPONSIVE MOBILE VIEW (max-width: 900px)
+   Stacks Editor Pane first, then Preview Section underneath on scroll.
+   ========================================================================== */
+
+.preview-section-header {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  border-radius: 99px;
+  padding: 6px 16px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow: visible !important;
+  }
+
+  .top-navbar {
+    height: auto !important;
+    padding: 12px 16px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .brand-logo {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  .toolbar-actions {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: nowrap !important;
+    padding-bottom: 4px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
+  }
+
+  .toolbar-actions::-webkit-scrollbar {
+    height: 3px;
+  }
+
+  .toolbar-actions::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 3px;
+  }
+
+  .btn-toolbar, .btn-primary {
+    flex-shrink: 0 !important;
+    font-size: 0.78rem !important;
+    padding: 7px 12px !important;
+  }
+
+  .workspace-split {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .editor-pane {
+    order: 1 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    border-right: none !important;
+    border-bottom: 2px solid var(--border-subtle) !important;
+  }
+
+  .step-indicator-wrapper {
+    padding: 12px 14px 10px !important;
+  }
+
+  .steps-nav {
+    display: grid !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 4px !important;
+  }
+
+  .step-tab {
+    padding: 6px 2px !important;
+  }
+
+  .step-icon-circle {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .step-tab-label {
+    font-size: 0.62rem !important;
+    line-height: 1.1 !important;
+    text-align: center !important;
+  }
+
+  .form-scroll-container {
+    overflow-y: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 16px 14px !important;
+  }
+
+  .step-footer-nav {
+    padding: 12px 16px !important;
+    position: static !important;
+  }
+
+  .preview-pane {
+    order: 2 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    padding: 24px 10px 60px 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  .preview-section-header {
+    display: flex !important;
+  }
+
+  .preview-viewport {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    overflow: visible !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .template-picker-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modal-backdrop {
+    padding: 10px !important;
+  }
+
+  .modal-panel {
+    max-width: 95vw !important;
+    margin: 10px !important;
+  }
+}

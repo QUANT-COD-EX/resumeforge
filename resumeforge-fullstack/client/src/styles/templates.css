@@ -1,6 +1,7 @@
 .a4-sheet {
   width: 210mm; min-height: 297mm; background: #ffffff; color: #0f172a;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55); overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
 }
 /* 1. MODERN */
@@ -127,6 +128,10 @@ body.is-exporting-pdf #a4-print-target {
   }
   .no-print {
     display: none !important;
+  }
+  .a4-sheet {
+    box-shadow: none !important;
+    border: none !important;
   }
   .app-shell,
   .workspace-split,

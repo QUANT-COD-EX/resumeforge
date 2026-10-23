@@ -3,38 +3,44 @@ import { ProjectTitle, LinkedInLink, GitHubLink, PortfolioLink } from './templat
 
 export default function ModernTemplate({ data }) {
   const { personal, education, experience, skills, projects } = data;
+  const hasContact = personal.email || personal.phone || personal.location || personal.linkedin || personal.github || personal.portfolio;
+  const hasSkills = (skills?.technical?.length > 0) || (skills?.tools?.length > 0) || (skills?.soft?.length > 0);
 
   return (
     <div className="tpl-modern">
       <aside className="modern-sidebar">
-        <div className="modern-identity">
-          <h1 className="modern-name">{personal.fullName || 'Your Name'}</h1>
-          <p className="modern-title">{personal.title || 'Professional Title'}</p>
-        </div>
+        {(personal.fullName || personal.title) && (
+          <div className="modern-identity">
+            {personal.fullName && <h1 className="modern-name">{personal.fullName}</h1>}
+            {personal.title && <p className="modern-title">{personal.title}</p>}
+          </div>
+        )}
 
-        <div className="modern-side-section">
-          <h3 className="modern-side-heading">Contact</h3>
-          <ul className="modern-contact-list">
-            {personal.email && <li>{personal.email}</li>}
-            {personal.phone && <li>{personal.phone}</li>}
-            {personal.location && <li>{personal.location}</li>}
-            {personal.linkedin && (
-              <li>
-                <LinkedInLink url={personal.linkedin} className="modern-contact-link" />
-              </li>
-            )}
-            {personal.github && (
-              <li>
-                <GitHubLink url={personal.github} className="modern-contact-link" />
-              </li>
-            )}
-            {personal.portfolio && (
-              <li>
-                <PortfolioLink url={personal.portfolio} className="modern-contact-link" />
-              </li>
-            )}
-          </ul>
-        </div>
+        {hasContact && (
+          <div className="modern-side-section">
+            <h3 className="modern-side-heading">Contact</h3>
+            <ul className="modern-contact-list">
+              {personal.email && <li>{personal.email}</li>}
+              {personal.phone && <li>{personal.phone}</li>}
+              {personal.location && <li>{personal.location}</li>}
+              {personal.linkedin && (
+                <li>
+                  <LinkedInLink url={personal.linkedin} className="modern-contact-link" />
+                </li>
+              )}
+              {personal.github && (
+                <li>
+                  <GitHubLink url={personal.github} className="modern-contact-link" />
+                </li>
+              )}
+              {personal.portfolio && (
+                <li>
+                  <PortfolioLink url={personal.portfolio} className="modern-contact-link" />
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
 
         {education.length > 0 && (
           <div className="modern-side-section">
@@ -52,33 +58,35 @@ export default function ModernTemplate({ data }) {
           </div>
         )}
 
-        <div className="modern-side-section">
-          <h3 className="modern-side-heading">Skills</h3>
-          {skills.technical.length > 0 && (
-            <div className="modern-skill-group">
-              <span className="modern-skill-label">Technical</span>
-              <div className="modern-skill-tags">
-                {skills.technical.map((s) => <span key={s} className="modern-tag">{s}</span>)}
+        {hasSkills && (
+          <div className="modern-side-section">
+            <h3 className="modern-side-heading">Skills</h3>
+            {skills.technical?.length > 0 && (
+              <div className="modern-skill-group">
+                <span className="modern-skill-label">Technical</span>
+                <div className="modern-skill-tags">
+                  {skills.technical.map((s) => <span key={s} className="modern-tag">{s}</span>)}
+                </div>
               </div>
-            </div>
-          )}
-          {skills.tools.length > 0 && (
-            <div className="modern-skill-group">
-              <span className="modern-skill-label">Tools</span>
-              <div className="modern-skill-tags">
-                {skills.tools.map((s) => <span key={s} className="modern-tag">{s}</span>)}
+            )}
+            {skills.tools?.length > 0 && (
+              <div className="modern-skill-group">
+                <span className="modern-skill-label">Tools</span>
+                <div className="modern-skill-tags">
+                  {skills.tools.map((s) => <span key={s} className="modern-tag">{s}</span>)}
+                </div>
               </div>
-            </div>
-          )}
-          {skills.soft.length > 0 && (
-            <div className="modern-skill-group">
-              <span className="modern-skill-label">Core</span>
-              <div className="modern-skill-tags">
-                {skills.soft.map((s) => <span key={s} className="modern-tag">{s}</span>)}
+            )}
+            {skills.soft?.length > 0 && (
+              <div className="modern-skill-group">
+                <span className="modern-skill-label">Core</span>
+                <div className="modern-skill-tags">
+                  {skills.soft.map((s) => <span key={s} className="modern-tag">{s}</span>)}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </aside>
 
       <main className="modern-main">

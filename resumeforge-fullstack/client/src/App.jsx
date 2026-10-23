@@ -23,7 +23,7 @@ import ImportPdfModal from './components/ImportPdfModal.jsx';
 import { downloadResumePdf } from './utils/exportPdf.js';
 
 export default function App() {
-  const [resumeData, setResumeData] = useLocalStorage('resumeforge_v1', INITIAL_RESUME_STATE);
+  const [resumeData, setResumeData] = useLocalStorage('resumeforge_v2', INITIAL_RESUME_STATE);
   const [currentStep, setCurrentStep] = useState(0);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isTailorOpen, setIsTailorOpen] = useState(false);
@@ -34,6 +34,16 @@ export default function App() {
   const [sharedBanner, setSharedBanner] = useState(null);
 
   const completion = useCompletion(resumeData);
+
+  // Clear any legacy cached Aarav Mehta dummy data so user always starts completely blank
+  useEffect(() => {
+    if (resumeData?.personal?.fullName === 'Aarav Mehta') {
+      setResumeData(INITIAL_RESUME_STATE);
+      try {
+        window.localStorage.removeItem('resumeforge_v1');
+      } catch {}
+    }
+  }, []);
 
   // Auto-load shared resume from Supabase if ?share=rf_... is present in URL
   useEffect(() => {
@@ -247,6 +257,9 @@ export default function App() {
         </section>
 
         <section className="preview-pane">
+          <div className="preview-section-header">
+            <Sparkles size={14} /> Live A4 Resume Preview
+          </div>
           <ResumePreview resumeData={resumeData} />
         </section>
       </div>

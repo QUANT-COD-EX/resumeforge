@@ -6,15 +6,22 @@ import CreativeTemplate from '../resume-templates/CreativeTemplate.jsx';
 
 export default function ResumePreview({ resumeData }) {
   const viewportRef = useRef(null);
-  const [scale, setScale] = useState(0.75);
+  const [scale, setScale] = useState(() => {
+    if (typeof window === 'undefined') return 0.75;
+    const isMobile = window.innerWidth <= 900;
+    const availableWidth = isMobile ? window.innerWidth - 32 : (window.innerWidth * 0.54) - 48;
+    return Math.min(1, Math.max(0.2, (availableWidth || 600) / 794));
+  });
   const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     const updateScale = () => {
-      if (!viewportRef.current) return;
-      const containerWidth = viewportRef.current.clientWidth - 48;
+      const isMobile = window.innerWidth <= 900;
+      const padding = isMobile ? 24 : 48;
+      const measured = viewportRef.current ? viewportRef.current.clientWidth : window.innerWidth;
+      const containerWidth = Math.min(measured, window.innerWidth) - padding;
       const a4PixelWidth = 794;
-      const calculated = Math.min(1, Math.max(0.38, containerWidth / a4PixelWidth));
+      const calculated = Math.min(1, Math.max(0.2, containerWidth / a4PixelWidth));
       setScale(calculated);
     };
 
@@ -56,6 +63,9 @@ export default function ResumePreview({ resumeData }) {
     }
   };
 
+  const scaledWidth = Math.round(794 * scale);
+  const scaledHeight = Math.round(1123 * scale);
+
   return (
     <div className="preview-viewport" ref={viewportRef}>
       <div
@@ -63,10 +73,28 @@ export default function ResumePreview({ resumeData }) {
         style={
           isPrinting
             ? { transform: 'none', height: 'auto', width: '210mm' }
-            : { transform: `scale(${scale})`, height: `${1123 * scale}px` }
+            : {
+                width: `${scaledWidth}px`,
+                height: `${scaledHeight}px`,
+                overflow: 'visible',
+                position: 'relative'
+              }
         }
       >
-        <div id="a4-print-target" className="a4-sheet">
+        <div
+          id="a4-print-target"
+          className="a4-sheet"
+          style={
+            isPrinting
+              ? {}
+              : {
+                  transform: `scale(${scale})`,
+                  transformOrigin: 'top left',
+                  width: '794px',
+                  minHeight: '1123px'
+                }
+          }
+        >
           {renderSelectedTemplate()}
         </div>
       </div>
