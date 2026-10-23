@@ -101,6 +101,7 @@
 /* PRINT & EXPORT PDF STYLES */
 body.is-exporting-pdf .a4-scale-wrapper {
   transform: none !important;
+  transition: none !important;
   height: auto !important;
   width: 210mm !important;
 }
@@ -137,6 +138,7 @@ body.is-exporting-pdf #a4-print-target {
     padding: 0 !important;
     margin: 0 !important;
     transform: none !important;
+    transition: none !important;
     height: auto !important;
     width: 210mm !important;
     min-width: 210mm !important;
