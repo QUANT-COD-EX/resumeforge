@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FileDown,
   FileText,
   Sparkles,
   Target,
+  Share2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Check
 } from 'lucide-react';
 import { INITIAL_RESUME_STATE, EMPTY_SECTION_DEFAULTS } from './defaultData.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
@@ -21,8 +23,27 @@ export default function App() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isTailorOpen, setIsTailorOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [sharedBanner, setSharedBanner] = useState(null);
 
   const completion = useCompletion(resumeData);
+
+  // Auto-load shared resume from Supabase if ?share=rf_... is present in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shareId = params.get('share');
+    if (shareId) {
+      fetch(`/api/load-resume/${encodeURIComponent(shareId)}`)
+        .then((res) => (res.ok ? res.json() : Promise.reject()))
+        .then((payload) => {
+          if (payload?.resumeData) {
+            setResumeData(payload.resumeData);
+            setSharedBanner(`Viewing Shared Resume (${payload.shareId}) • Views: ${payload.viewsCount}`);
+          }
+        })
+        .catch(() => console.warn('Could not fetch shared resume ID:', shareId));
+    }
+  }, [setResumeData]);
 
   const updateSection = (sectionKey, newValue) => {
     setResumeData((prev) => ({
@@ -57,7 +78,7 @@ export default function App() {
         return;
       }
     } catch {
-      // Fallback client-side Word export if Python service is unavailable
+      // Fallback client-side Word export if service is unavailable
     }
 
     const { personal, education, experience, skills, projects } = resumeData;
@@ -86,6 +107,27 @@ export default function App() {
     link.click();
   };
 
+  const handleShareLink = async () => {
+    try {
+      const res = await fetch('/api/share-resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeData })
+      });
+      if (res.ok) {
+        const { shareUrl, shareId } = await res.json();
+        window.history.replaceState({}, '', `?share=${shareId}`);
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        throw new Error('Fallback share');
+      }
+    } catch {
+      await navigator.clipboard.writeText(window.location.href);
+    }
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2500);
+  };
+
   return (
     <div className="app-shell">
       <header className="top-navbar no-print">
@@ -93,6 +135,7 @@ export default function App() {
           <div className="brand-orb" />
           <span className="brand-title">Resume<span>Forge</span></span>
           <span className="autosave-pill">✓ Autosaved</span>
+          {sharedBanner && <span className="autosave-pill" style={{ color: '#38bdf8' }}>{sharedBanner}</span>}
         </div>
 
         <div className="toolbar-actions">
@@ -104,6 +147,10 @@ export default function App() {
           </button>
           <button type="button" className="btn-toolbar" onClick={handleExportDocx}>
             <FileText size={15} /> DOCX
+          </button>
+          <button type="button" className="btn-toolbar" onClick={handleShareLink}>
+            {shareCopied ? <Check size={15} /> : <Share2 size={15} />}
+            {shareCopied ? 'Link Copied!' : 'Share'}
           </button>
           <button type="button" className="btn-primary" onClick={handlePrintPdf}>
             <FileDown size={15} /> Export PDF

@@ -1,6 +1,9 @@
 {
-  "name": "resumeforge-vercel",
+  "name": "resumeforge-fullstack",
   "version": "1.0.0",
   "type": "module",
-  "dependencies": {}
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "nanoid": "^5.0.7"
+  }
 }
